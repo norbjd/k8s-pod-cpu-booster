@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: pod-cpu-booster
+  namespace: pod-cpu-booster
+spec:
+  selector:
+    matchLabels:
+      name: pod-cpu-booster
+  template:
+    metadata:
+      labels:
+        name: pod-cpu-booster
+    spec:
+      containers:
+      - name: pod-cpu-booster
+        image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          runAsUser: 0 # required otherwise we won't be able to edit files under /sys/fs/cgroup
+        volumeMounts:
+        - name: sysfscgroup
+          mountPath: /sys/fs/cgroup
+      serviceAccountName: pod-cpu-booster
+      terminationGracePeriodSeconds: 0 # TODO: change for production environments
+      volumes:
+      - name: sysfscgroup
+        hostPath:
+          path: /sys/fs/cgroup
