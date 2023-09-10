@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	cpuBoostStartupLabel  = "norbjd/k8s-pod-cpu-booster-enabled"
-	cpuBoostMultiplicator = 10
+	cpuBoostStartupAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-enabled"
+	cpuBoostMultiplicator     = 10
 )
 
 // Inspired by:
@@ -80,7 +80,7 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 		oldPod.Namespace, oldPod.Name,
 	)
 
-	if podHasBoostLabel(newPod) {
+	if podHasBoostAnnotation(newPod) {
 		if len(newPod.Status.ContainerStatuses) == 0 {
 			klog.Infof("pod %s/%s has no container statuses, skipping...", newPod.Namespace, newPod.Name)
 			return
@@ -113,8 +113,8 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 	}
 }
 
-func podHasBoostLabel(pod *corev1.Pod) bool {
-	boost, ok := pod.Labels[cpuBoostStartupLabel]
+func podHasBoostAnnotation(pod *corev1.Pod) bool {
+	boost, ok := pod.Annotations[cpuBoostStartupAnnotation]
 	return ok && boost == "true"
 }
 
