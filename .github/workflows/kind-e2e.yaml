@@ -47,8 +47,7 @@ jobs:
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        ls -alR
-        ko apply -f config/
+        ko apply -f ./src/github.com/norbjd/k8s-pod-cpu-booster/config/
 
     - name: Wait for Ready
       run: |
