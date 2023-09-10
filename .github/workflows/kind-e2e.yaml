@@ -23,7 +23,6 @@ jobs:
         - v1.27.x
 
     env:
-      GOPATH: ${{ github.workspace }}
       KO_DOCKER_REPO: kind.local
 
     steps:
@@ -34,10 +33,8 @@ jobs:
 
     - uses: ko-build/setup-ko@v0.6
 
-    - name: Check out code onto GOPATH
+    - name: Check out code
       uses: actions/checkout@v4
-      with:
-        path: ./src/github.com/norbjd/k8s-pod-cpu-booster
 
     - name: Setup KinD
       uses: chainguard-dev/actions/setup-kind@main
@@ -47,7 +44,7 @@ jobs:
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        ko apply -f ./src/github.com/norbjd/k8s-pod-cpu-booster/config/
+        ko apply -f ./config/
 
     - name: Wait for Ready
       run: |
