@@ -47,7 +47,15 @@ jobs:
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        ko apply -f ./config/
+        CGROUP_VERSION="v2"
+        if [ $"{{ matrix.os }}" == "ubuntu-20.04" ]
+        then
+          CGROUP_VERSION="v1"
+        fi
+
+        ko resolve -f config/ | \
+          CGROUP_VERSION="$CGROUP_VERSION" envsubst | \
+          kubectl apply -f -
 
     - name: Wait for Ready
       run: |
