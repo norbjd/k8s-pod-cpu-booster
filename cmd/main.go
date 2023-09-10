@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"os"
 
-	cgroupv2_containerd_kind "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv2/containerd/kind"
+	"github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup"
+	cgroupv1_containerd_kind "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv1/kind"
+	cgroupv2_containerd_kind "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv2/kind"
 	"github.com/norbjd/k8s-pod-cpu-booster/pkg/informer"
 
 	"k8s.io/client-go/kubernetes"
@@ -25,9 +28,15 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: detect automatically the right cgroup handler to use
-	// only support Kind + containerd + cgroups v2 for now
-	cgroupHandler := cgroupv2_containerd_kind.Cgroupv2ContainerdKindHandler{}
+	var cgroupHandler cgroup.CgroupHandler
+
+	// TODO: instead of using an env var, detect automatically the right cgroup handler to use
+	switch os.Getenv("CGROUP_VERSION") {
+	case "v1":
+		cgroupHandler = cgroupv1_containerd_kind.Cgroupv1KindHandler{}
+	default:
+		cgroupHandler = cgroupv2_containerd_kind.Cgroupv2KindHandler{}
+	}
 
 	informer.Run(clientset, cgroupHandler)
 }

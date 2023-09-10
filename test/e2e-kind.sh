@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+echo "Running on OS: $OS" # this will fail if not set because of set -u
+
 docker pull python:3.11-alpine
 kind load docker-image python:3.11-alpine
 
@@ -29,26 +31,49 @@ then
     echo -e "\033[0;32m[SUCCESS]\033[0m python-with-boost started more than $ready_time_minimum_ratio times quicker than python-no-boost"
 else
     echo -e "\033[0;31m[FAILURE]\033[0m python-with-boost should start more than $ready_time_minimum_ratio times quicker than python-no-boost"
+    kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
     exit 1
 fi
 
-# also check that cgroup cpu.max file is back to the default limits
+# also check that cgroup cpu.max or cpu.cfs_quota_us file is back to the default limits
 python_with_boost_pod_uid=$(kubectl get pods python-with-boost -o jsonpath='{.metadata.uid}' | sed 's~-~_~g')
 python_with_boost_python_container_id=$(kubectl get pods python-with-boost -o jsonpath='{.status.containerStatuses[?(@.name=="python")].containerID}' | cut -d '/' -f 3)
 
-docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.max > pod_cpu.max
-docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.max > python_container_cpu.max
-
-if ! diff -b <(cat pod_cpu.max) <(echo "5000 100000")
+if [ "$OS" == "ubuntu-20.04" ] # cgroup v1
 then
-    echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.max has not been reset"
-    exit 1
-fi
+    docker exec kind-worker cat /sys/fs/cgroup/cpu/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.cfs_quota_us > pod_cpu.cfs_quota_us
+    docker exec kind-worker cat /sys/fs/cgroup/cpu/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.cfs_quota_us > python_container_cpu.cfs_quota_us
 
-if ! diff -b <(cat python_container_cpu.max) <(echo "5000 100000")
-then
-    echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.max has not been reset"
-    exit 1
+    if ! diff -b <(cat pod_cpu.cfs_quota_us) <(echo "5000")
+    then
+        echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.cfs_quota_us has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+        exit 1
+    fi
+
+    if ! diff -b <(cat python_container_cpu.cfs_quota_us) <(echo "5000")
+    then
+        echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.cfs_quota_us has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+        exit 1
+    fi
+else # cgroup v2
+    docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.max > pod_cpu.max
+    docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.max > python_container_cpu.max
+
+    if ! diff -b <(cat pod_cpu.max) <(echo "5000 100000")
+    then
+        echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.max has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+        exit 1
+    fi
+
+    if ! diff -b <(cat python_container_cpu.max) <(echo "5000 100000")
+    then
+        echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.max has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+        exit 1
+    fi
 fi
 
 kubectl delete \
