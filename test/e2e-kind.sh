@@ -21,6 +21,10 @@ python_no_boost_ready_time=$(kubectl get pods python-no-boost -o go-template='{{
 python_no_boost_seconds_to_be_ready=$(( $( date -d "$python_no_boost_ready_time" +%s ) - $( date -d "$python_no_boost_start_time" +%s ) ))
 echo "[INFO] python-no-boost pod took $python_no_boost_seconds_to_be_ready second(s) to be ready"
 
+docker exec kind-worker sh -c 'find /sys/fs/cgroup/cpu,cpuacct/kubelet.slice/kubelet-kubepods.slice/ -perm -400 -name cpu.cfs_quota_us | xargs -I {} sh -c "echo {} && cat {}"'
+kubectl get pod/python-with-boost -o yaml
+kubectl logs --tail=-1 -l name=pod-cpu-booster
+
 # python-with-boost should start <ready_time_minimum_ratio> times quicker than python-no-boost
 ready_time_minimum_ratio=3
 
