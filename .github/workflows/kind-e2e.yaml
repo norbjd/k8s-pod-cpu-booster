@@ -1,0 +1,57 @@
+name: KinD e2e tests
+
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  e2e-tests:
+    name: e2e tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s-version:
+        - v1.27.x
+
+    env:
+      KO_DOCKER_REPO: kind.local
+
+    steps:
+    - name: Set up Go 1.21.x
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.21.x
+
+    - uses: ko-build/setup-ko@v0.6
+
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Setup KinD
+      uses: chainguard-dev/actions/setup-kind@main
+      with:
+        k8s-version: ${{ matrix.k8s-version }}
+        kind-worker-count: 1
+
+    - name: Install k8s-pod-cpu-booster
+      run: |
+        ko apply -f ./config/
+
+    - name: Wait for Ready
+      run: |
+        echo "Waiting for Pods to become ready"
+        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l name=pod-cpu-booster
+        sleep 5 # because readiness probe is not accurate (Ready != informer is started), but sleeping is enough for now
+
+    - name: Run e2e Tests
+      run: |
+        ./test/e2e-kind.sh
