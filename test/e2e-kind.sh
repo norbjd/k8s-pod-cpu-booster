@@ -31,6 +31,7 @@ then
     echo -e "\033[0;32m[SUCCESS]\033[0m python-with-boost started more than $ready_time_minimum_ratio times quicker than python-no-boost"
 else
     echo -e "\033[0;31m[FAILURE]\033[0m python-with-boost should start more than $ready_time_minimum_ratio times quicker than python-no-boost"
+    kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
     exit 1
 fi
 
@@ -46,12 +47,14 @@ then
     if ! diff -b <(cat pod_cpu.cfs_quota_us) <(echo "5000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.cfs_quota_us has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
         exit 1
     fi
 
     if ! diff -b <(cat python_container_cpu.cfs_quota_us) <(echo "5000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.cfs_quota_us has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
         exit 1
     fi
 else # cgroup v2
@@ -61,12 +64,14 @@ else # cgroup v2
     if ! diff -b <(cat pod_cpu.max) <(echo "5000 100000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.max has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
         exit 1
     fi
 
     if ! diff -b <(cat python_container_cpu.max) <(echo "5000 100000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.max has not been reset"
+        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
         exit 1
     fi
 fi
