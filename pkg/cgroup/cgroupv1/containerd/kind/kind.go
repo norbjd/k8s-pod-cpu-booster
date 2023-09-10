@@ -20,7 +20,7 @@ func (m Cgroupv1ContainerdKindHandler) WriteCPUMax(podUID types.UID, containerID
 	podCgroupCPUMaxFile := path.Join(podCgroupSliceDirectory, "cpu.cfs_quota_us")
 	containerCgroupCPUMaxFile := path.Join(containerCgroupScopeDirectory, "cpu.cfs_quota_us")
 
-	newCPUMaxFileContents := fmt.Sprintf("%d 100000", newCPUMax)
+	newCPUMaxFileContents := fmt.Sprintf("%d", newCPUMax)
 
 	klog.Infof("will write %s to %s and %s", newCPUMaxFileContents, podCgroupCPUMaxFile, containerCgroupCPUMaxFile)
 
