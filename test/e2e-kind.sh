@@ -36,8 +36,8 @@ fi
 python_with_boost_pod_uid=$(kubectl get pods python-with-boost -o jsonpath='{.metadata.uid}' | sed 's~-~_~g')
 python_with_boost_python_container_id=$(kubectl get pods python-with-boost -o jsonpath='{.status.containerStatuses[?(@.name=="python")].containerID}' | cut -d '/' -f 3)
 
-docker exec -it kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.max > pod_cpu.max
-docker exec -it kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.max > python_container_cpu.max
+docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.max > pod_cpu.max
+docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.max > python_container_cpu.max
 
 if ! diff -b <(cat pod_cpu.max) <(echo "5000 100000")
 then
