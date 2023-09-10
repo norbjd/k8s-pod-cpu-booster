@@ -53,6 +53,9 @@ jobs:
           CGROUP_VERSION="v1"
         fi
 
+        ko resolve -f config/
+        echo "$CGROUP_VERSION"
+
         ko resolve -f config/ | \
           CGROUP_VERSION="$CGROUP_VERSION" envsubst | \
           kubectl apply -f -
