@@ -45,19 +45,19 @@ Install `k8s-pod-cpu-booster`:
 KO_DOCKER_REPO=kind.local ko apply -f config/
 ```
 
-Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the label `norbjd/k8s-pod-cpu-booster-enabled`:
+Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the annotation `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
 
 ```diff
 --- examples/python-no-boost.yaml
 +++ examples/python-with-boost.yaml
 @@ -4 +4,3 @@
 -  name: python-no-boost
-+  labels:
-+    norbjd/k8s-pod-cpu-booster-enabled: "true"
++  annotations:
++    norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
 +  name: python-with-boost
 ```
 
-As a result, the pod `python-with-boost` (with the label) will benefit from a CPU boost, but `python-no-boost` won't:
+As a result, the pod `python-with-boost` (with the annotation) will benefit from a CPU boost, but `python-no-boost` won't:
 
 ```sh
 kubectl apply -f examples/python-no-boost.yaml -f examples/python-with-boost.yaml
