@@ -25,8 +25,8 @@ import (
 const (
 	cpuBoostStartupAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-enabled"
 
-	cpuBoostMultiplicatorAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-multiplicator"
-	cpuBoostDefaultMultiplicator    = uint64(10)
+	cpuBoostMultiplierAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-multiplier"
+	cpuBoostDefaultMultiplier    = uint64(10)
 )
 
 // Inspired by:
@@ -75,19 +75,19 @@ func podCPUBoosterTweakFunc() internalinterfaces.TweakListOptionsFunc {
 	}
 }
 
-func getBoostMultiplicatorFromAnnotations(pod *corev1.Pod) uint64 {
-	if boostMultiplicatorAnnotationValue, ok := pod.Annotations["cpuBoostMultiplicatorAnnotation"]; ok {
-		boostMultiplicatorAnnotationValueInt, err := strconv.ParseUint(boostMultiplicatorAnnotationValue, 10, 64)
+func getBoostMultiplierFromAnnotations(pod *corev1.Pod) uint64 {
+	if boostMultiplierAnnotationValue, ok := pod.Annotations["cpuBoostMultiplierAnnotation"]; ok {
+		boostMultiplierAnnotationValueInt, err := strconv.ParseUint(boostMultiplierAnnotationValue, 10, 64)
 		if err != nil {
-			klog.Errorf("boost multiplicator is not a valid value, will take the default %d instead: %s",
-				cpuBoostDefaultMultiplicator, err.Error())
-			return cpuBoostDefaultMultiplicator
+			klog.Errorf("boost multiplier is not a valid value, will take the default %d instead: %s",
+				cpuBoostDefaultMultiplier, err.Error())
+			return cpuBoostDefaultMultiplier
 		}
 
-		return boostMultiplicatorAnnotationValueInt
+		return boostMultiplierAnnotationValueInt
 	}
 
-	return cpuBoostDefaultMultiplicator
+	return cpuBoostDefaultMultiplier
 }
 
 func onUpdate(oldObj interface{}, newObj interface{}) {
@@ -113,7 +113,7 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 		containerID := newPod.Status.ContainerStatuses[0].ContainerID // this is same to use [0] as we've checked above if we have 1 container
 
 		initialCPULimit := newPod.Spec.Containers[0].Resources.Limits.Cpu()
-		boostMultiplicator := getBoostMultiplicatorFromAnnotations(newPod)
+		boostMultiplier := getBoostMultiplierFromAnnotations(newPod)
 
 		// once ready, we reset the CPU as the normal limit
 		if podPassedFromNotReadyToReady(oldPod, newPod) {
@@ -124,7 +124,7 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 			}
 		} else { // TODO: do that only once
 			klog.Infof("will boost %s/%s CPU limit", newPod.Namespace, newPod.Name)
-			err := boostCPU(podUID, containerID, initialCPULimit, boostMultiplicator)
+			err := boostCPU(podUID, containerID, initialCPULimit, boostMultiplier)
 			if err != nil {
 				klog.Errorf("error while boosting CPU: %s", err.Error())
 			}
@@ -166,9 +166,9 @@ func quantityToCPULimit(quantity *resource.Quantity) uint64 {
 	return uint64(quantity.AsApproximateFloat64() * 100_000.)
 }
 
-func boostCPU(podUID types.UID, containerID string, initialCPULimit *resource.Quantity, boostMultiplicator uint64) error {
+func boostCPU(podUID types.UID, containerID string, initialCPULimit *resource.Quantity, boostMultiplier uint64) error {
 	klog.Infof("CPU limit: %d", quantityToCPULimit(initialCPULimit))
-	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * boostMultiplicator
+	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * boostMultiplier
 	klog.Infof("New cgroup cpu limit to: %d", cgroupCPULimitAfterBoost)
 
 	err := writeCgroupCPUMax(podUID, containerID, cgroupCPULimitAfterBoost)
