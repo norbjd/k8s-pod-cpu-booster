@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +24,9 @@ import (
 
 const (
 	cpuBoostStartupAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-enabled"
-	cpuBoostMultiplicator     = 10
+
+	cpuBoostMultiplierAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-multiplier"
+	cpuBoostDefaultMultiplier    = uint64(10)
 )
 
 // Inspired by:
@@ -72,6 +75,21 @@ func podCPUBoosterTweakFunc() internalinterfaces.TweakListOptionsFunc {
 	}
 }
 
+func getBoostMultiplierFromAnnotations(pod *corev1.Pod) uint64 {
+	if boostMultiplierAnnotationValue, ok := pod.Annotations["cpuBoostMultiplierAnnotation"]; ok {
+		boostMultiplierAnnotationValueInt, err := strconv.ParseUint(boostMultiplierAnnotationValue, 10, 64)
+		if err != nil {
+			klog.Errorf("boost multiplier is not a valid value, will take the default %d instead: %s",
+				cpuBoostDefaultMultiplier, err.Error())
+			return cpuBoostDefaultMultiplier
+		}
+
+		return boostMultiplierAnnotationValueInt
+	}
+
+	return cpuBoostDefaultMultiplier
+}
+
 func onUpdate(oldObj interface{}, newObj interface{}) {
 	oldPod := oldObj.(*corev1.Pod)
 	newPod := newObj.(*corev1.Pod)
@@ -95,6 +113,7 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 		containerID := newPod.Status.ContainerStatuses[0].ContainerID // this is same to use [0] as we've checked above if we have 1 container
 
 		initialCPULimit := newPod.Spec.Containers[0].Resources.Limits.Cpu()
+		boostMultiplier := getBoostMultiplierFromAnnotations(newPod)
 
 		// once ready, we reset the CPU as the normal limit
 		if podPassedFromNotReadyToReady(oldPod, newPod) {
@@ -105,7 +124,7 @@ func onUpdate(oldObj interface{}, newObj interface{}) {
 			}
 		} else { // TODO: do that only once
 			klog.Infof("will boost %s/%s CPU limit", newPod.Namespace, newPod.Name)
-			err := boostCPU(podUID, containerID, initialCPULimit)
+			err := boostCPU(podUID, containerID, initialCPULimit, boostMultiplier)
 			if err != nil {
 				klog.Errorf("error while boosting CPU: %s", err.Error())
 			}
@@ -147,9 +166,9 @@ func quantityToCPULimit(quantity *resource.Quantity) uint64 {
 	return uint64(quantity.AsApproximateFloat64() * 100_000.)
 }
 
-func boostCPU(podUID types.UID, containerID string, initialCPULimit *resource.Quantity) error {
+func boostCPU(podUID types.UID, containerID string, initialCPULimit *resource.Quantity, boostMultiplier uint64) error {
 	klog.Infof("CPU limit: %d", quantityToCPULimit(initialCPULimit))
-	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * cpuBoostMultiplicator
+	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * boostMultiplier
 	klog.Infof("New cgroup cpu limit to: %d", cgroupCPULimitAfterBoost)
 
 	err := writeCgroupCPUMax(podUID, containerID, cgroupCPULimitAfterBoost)

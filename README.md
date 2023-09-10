@@ -12,7 +12,12 @@ Between startup and `Ready` status, the pod benefits from a CPU boost (x10).
 
 ## How does it work?
 
-It is deployed as a controller on every node (with a `DaemonSet`). It listens for every pod update; if a pod has `norbjd/k8s-pod-cpu-booster-enabled: "true"` label: it boosts the CPU at pod startup, and reset the CPU limit when the pod is ready.
+It is deployed as a controller on every node (with a `DaemonSet`). It listens for every pod update; if a pod has `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label: it boosts the CPU at pod startup, and reset the CPU limit when the pod is ready.
+
+The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation:
+
+- if specified, it will increase the CPU limit by `x`, where `x` is the value of the annotation (must be an unsigned integer)
+- if unspecified or invalid, it will increase the CPU limit by the default value (`10`)
 
 The controller messes with cgroups file `cpu.max` to give that boost (or reset the limit).
 
@@ -49,27 +54,30 @@ Start two similar pods with low CPU limits and running `python -m http.server`, 
 
 ```diff
 --- examples/python-no-boost.yaml
-+++ examples/python-with-boost.yaml
++++ examples/python-with-default-boost.yaml
 @@ -4 +4,3 @@
 -  name: python-no-boost
 +  annotations:
 +    norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
-+  name: python-with-boost
++  name: python-with-default-boost
 ```
 
-As a result, the pod `python-with-boost` (with the annotation) will benefit from a CPU boost, but `python-no-boost` won't:
+> [!NOTE]
+> The CPU boost multiplier can also be configured (see [`python-with-small-boost.yaml`](examples/python-with-small-boost.yaml)) by using the `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation.
+
+As a result, the pod `python-with-default-boost` (with the annotation) will benefit from a CPU boost, but `python-no-boost` won't:
 
 ```sh
-kubectl apply -f examples/python-no-boost.yaml -f examples/python-with-boost.yaml
+kubectl apply -f examples/python-no-boost.yaml -f examples/python-with-default-boost.yaml
 
 # wait until pods are ready
-kubectl wait --for=condition=Ready pod/python-with-boost pod/python-no-boost
+kubectl wait --for=condition=Ready pod/python-with-default-boost pod/python-no-boost
 ```
 
 Once both are ready, check how much time each took to be ready:
 
 ```sh
-for pod_name in python-with-boost python-no-boost
+for pod_name in python-with-default-boost python-no-boost
 do
     kubectl get pods $pod_name -o go-template='{{ .metadata.name }}{{ " " }}{{ range .status.containerStatuses }}{{ if eq .name "python" }}{{ "started at: " }}{{ .state.running.startedAt }}{{ end }}{{ end }}{{ " / " }}{{ range .status.conditions }}{{ if (and (eq .type "Ready") (eq .status "True")) }}{{ "ready at: " }}{{ .lastTransitionTime }}{{ end }}{{ end }}{{ "\n" }}'
 done
@@ -78,16 +86,16 @@ done
 Example result:
 
 ```
-python-with-boost started at: 2023-09-03T15:55:45Z / ready at: 2023-09-03T15:55:46Z
+python-with-default-boost started at: 2023-09-03T15:55:45Z / ready at: 2023-09-03T15:55:46Z
 python-no-boost started at: 2023-09-03T15:55:44Z / ready at: 2023-09-03T15:55:58Z
 ```
 
-Here, the pod with the CPU boost (`python-with-boost`) took around 1 second to start, while the pod without CPU boost (`python-no-boost`) took around 14 seconds.
+Here, the pod with the CPU boost (`python-with-default-boost`) took around 1 second to start, while the pod without CPU boost (`python-no-boost`) took around 14 seconds.
 
 Cleanup:
 
 ```sh
-kubectl delete -f examples/python-no-boost.yaml -f examples/python-with-boost.yaml
+kubectl delete -f examples/python-no-boost.yaml -f examples/python-with-default-boost.yaml
 
 KO_DOCKER_REPO=kind.local ko delete -f config/
 
