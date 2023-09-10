@@ -22,6 +22,7 @@ jobs:
         - v1.27.x
         os:
         - ubuntu-20.04
+        - ubuntu-22.04
     runs-on: ${{ matrix.os }}
 
     env:
@@ -56,4 +57,4 @@ jobs:
 
     - name: Run e2e Tests
       run: |
-        ./test/e2e-kind.sh
+        OS=${{ matrix.os }} ./test/e2e-kind.sh
