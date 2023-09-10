@@ -63,7 +63,7 @@ Start two similar pods with low CPU limits and running `python -m http.server`, 
 ```
 
 > [!NOTE]
-> The CPU boost multiplier can also be configured (see [`python-with-small-boost.yaml`](examples/python-with-small-boost.yaml)) by using the `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation.
+> The CPU boost multiplier can also be configured (see [`python-with-small-boost.yaml`](./examples/python-with-small-boost.yaml)) by using the `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation.
 
 As a result, the pod `python-with-default-boost` (with the annotation) will benefit from a CPU boost, but `python-no-boost` won't:
 
