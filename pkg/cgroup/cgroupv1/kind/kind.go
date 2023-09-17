@@ -1,12 +1,10 @@
 package cgroupv1_containerd_kind
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"strings"
-	"syscall"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -56,22 +54,14 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 	fmt.Println(string(contents2))
 
-	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
-	if err != nil {
-		var pathErr *os.PathError
-		if errors.As(err, &pathErr) {
-			var syscallErr syscall.Errno
-			if errors.As(pathErr.Unwrap(), &syscallErr) {
-				fmt.Println(syscallErr.Error())
-			}
-		}
-
-		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
-	}
-
 	err = os.WriteFile(containerCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 	if err != nil {
 		return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
+	}
+
+	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+	if err != nil {
+		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
 	}
 
 	podCgroupCPUMaxFileContents, _ := os.ReadFile(podCgroupCPUCfsQuotaUsFile)

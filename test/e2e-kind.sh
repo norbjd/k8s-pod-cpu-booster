@@ -3,6 +3,7 @@
 set -euo pipefail
 
 echo "Running on OS: $OS" # this will fail if not set because of set -u
+echo "System information (uname -a): $(uname -a)"
 
 docker pull python:3.11-alpine
 kind load docker-image python:3.11-alpine
@@ -81,5 +82,7 @@ echo "===================="
 kubectl delete \
     -f ./test/e2e/python-no-boost.yaml \
     -f ./test/e2e/python-with-boost.yaml
+
+journalctl --no-pager
 
 exit $exit_code
