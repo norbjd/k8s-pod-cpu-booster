@@ -1,4 +1,4 @@
-package cgroupv1_containerd_kind
+package cgroup
 
 import (
 	"fmt"
@@ -11,12 +11,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type Cgroupv1KindHandler struct{}
+func v1WriteCPUMax(handler Handler, podUID types.UID, containerID string, newCPUMax uint64) error {
+	if handler.GetVersion() != v1 {
+		return fmt.Errorf("%w: handler must be %s, but got %s", errMismatchVersion, v1.String(), handler.GetVersion().String())
+	}
 
-// TODO: write only if file exists. Try to understand when the file is available
-func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, newCPUMax uint64) error {
-	podCgroupSliceDirectory := getPodCgroupSliceDirectory(podUID)
-	containerCgroupScopeDirectory := getContainerCgroupScopeDirectory(podCgroupSliceDirectory, containerID)
+	podCgroupSliceDirectory := handler.GetPodDirectory(podUID)
+	containerCgroupScopeDirectory := handler.GetContainerDirectory(podUID, containerID)
 
 	podCgroupCPUCfsQuotaUsFile := path.Join(podCgroupSliceDirectory, "cpu.cfs_quota_us")
 	containerCgroupCPUCfsQuotaUsFile := path.Join(containerCgroupScopeDirectory, "cpu.cfs_quota_us")
@@ -72,20 +73,4 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 	klog.Infof("container cpu.cfs_quota_us: %s", string(containerCgroupCPUMaxFileContents))
 
 	return nil
-}
-
-func getPodCgroupSliceDirectory(podUID types.UID) string {
-	return fmt.Sprintf(
-		"/sys/fs/cgroup/cpu,cpuacct/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod%s.slice",
-		strings.ReplaceAll(string(podUID), "-", "_"),
-	)
-}
-
-func getContainerCgroupScopeDirectory(podCgroupSliceDirectory, containerID string) string {
-	containerID = strings.Replace(containerID, "containerd://", "", 1) // assumes only containerd
-	return fmt.Sprintf(
-		"%s/cri-containerd-%s.scope",
-		podCgroupSliceDirectory,
-		containerID,
-	)
 }

@@ -5,10 +5,6 @@ import (
 	"os"
 
 	"github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup"
-	cgroupv1_containerd_kapsule "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv1/kapsule"
-	cgroupv1_containerd_kind "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv1/kind"
-	cgroupv2_containerd_kapsule "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv2/kapsule"
-	cgroupv2_containerd_kind "github.com/norbjd/k8s-pod-cpu-booster/pkg/cgroup/cgroupv2/kind"
 	"github.com/norbjd/k8s-pod-cpu-booster/pkg/informer"
 
 	"k8s.io/client-go/kubernetes"
@@ -30,27 +26,27 @@ func main() {
 		panic(err)
 	}
 
-	var cgroupHandler cgroup.CgroupHandler
+	var cgroupHandler cgroup.Handler
 
 	// TODO: instead of using an env var, detect automatically the right cgroup handler to use
 	switch os.Getenv("CGROUP_VERSION") {
 	case "v1":
 		switch os.Getenv("K8S_DISTRIBUTION") {
 		case "kapsule":
-			klog.Info("Using Cgroupv1KapsuleHandler")
-			cgroupHandler = cgroupv1_containerd_kapsule.Cgroupv1KapsuleHandler{}
+			klog.Info("Using V1KapsuleHandler")
+			cgroupHandler = cgroup.V1KapsuleHandler{}
 		default:
-			klog.Info("Using Cgroupv1KindHandler")
-			cgroupHandler = cgroupv1_containerd_kind.Cgroupv1KindHandler{}
+			klog.Info("Using V1KindHandler")
+			cgroupHandler = cgroup.V1KindHandler{}
 		}
 	default:
 		switch os.Getenv("K8S_DISTRIBUTION") {
 		case "kapsule":
-			klog.Info("Using Cgroupv2KapsuleHandler")
-			cgroupHandler = cgroupv2_containerd_kapsule.Cgroupv2KapsuleHandler{}
+			klog.Info("Using V2KapsuleHandler")
+			cgroupHandler = cgroup.V2KapsuleHandler{}
 		default:
-			klog.Info("Using Cgroupv2KindHandler")
-			cgroupHandler = cgroupv2_containerd_kind.Cgroupv2KindHandler{}
+			klog.Info("Using V2KindHandler")
+			cgroupHandler = cgroup.V2KindHandler{}
 		}
 	}
 
