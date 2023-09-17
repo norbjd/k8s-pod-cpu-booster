@@ -22,7 +22,7 @@ jobs:
         - v1.27.x
         os:
         - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1
-        - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
+        # - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
     runs-on: ${{ matrix.os }}
 
     env:

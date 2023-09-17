@@ -24,7 +24,21 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 	klog.Infof("will write %s to %s and %s", newCPUCfsQuotaUsFileContents, podCgroupCPUCfsQuotaUsFile, containerCgroupCPUCfsQuotaUsFile)
 
-	err := os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+	fi, err := os.Stat(podCgroupCPUCfsQuotaUsFile)
+	if err != nil {
+		return fmt.Errorf("cannot stat pod cgroup %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+	}
+
+	fmt.Println(fi)
+
+	fi, err = os.Stat(containerCgroupCPUCfsQuotaUsFile)
+	if err != nil {
+		return fmt.Errorf("cannot stat container cgroup %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
+	}
+
+	fmt.Println(fi)
+
+	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 	if err != nil {
 		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
 	}
@@ -45,7 +59,7 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 func getPodCgroupSliceDirectory(podUID types.UID) string {
 	return fmt.Sprintf(
-		"/sys/fs/cgroup/cpu/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod%s.slice",
+		"/sys/fs/cgroup/cpu,cpuacct/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod%s.slice",
 		strings.ReplaceAll(string(podUID), "-", "_"),
 	)
 }

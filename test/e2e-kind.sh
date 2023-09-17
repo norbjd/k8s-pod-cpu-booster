@@ -41,8 +41,8 @@ python_with_boost_python_container_id=$(kubectl get pods python-with-boost -o js
 
 if [ "$OS" == "ubuntu-20.04" ] # cgroup v1
 then
-    docker exec kind-worker cat /sys/fs/cgroup/cpu/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.cfs_quota_us > pod_cpu.cfs_quota_us
-    docker exec kind-worker cat /sys/fs/cgroup/cpu/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.cfs_quota_us > python_container_cpu.cfs_quota_us
+    docker exec kind-worker cat /sys/fs/cgroup/cpu,cpuacct/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.cfs_quota_us > pod_cpu.cfs_quota_us
+    docker exec kind-worker cat /sys/fs/cgroup/cpu,cpuacct/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cri-containerd-${python_with_boost_python_container_id}.scope/cpu.cfs_quota_us > python_container_cpu.cfs_quota_us
 
     if ! diff -b <(cat pod_cpu.cfs_quota_us) <(echo "5000")
     then
