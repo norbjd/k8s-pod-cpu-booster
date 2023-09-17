@@ -14,7 +14,7 @@ func (h V1KapsuleHandler) GetVersion() version {
 }
 
 func (h V1KapsuleHandler) GetPodDirectory(podUID types.UID) string {
-	return fmt.Sprintf("/sys/fs/cgroup/cpu,cpuacct/kubepods/pod%s", podUID)
+	return fmt.Sprintf("/sys/fs/cgroup/cpu,cpuacct/kubepods/pod%s", string(podUID))
 }
 
 func (h V1KapsuleHandler) GetContainerDirectory(podUID types.UID, containerID string) string {
