@@ -4,8 +4,8 @@ Simple PoC to give pods a CPU boost during startup (before pod is `Ready`).
 
 :warning: **this is pre-alpha / work in progress, don't use in production** :warning:
 
-- only support [kind](https://kind.sigs.k8s.io/) and [kapsule](https://www.scaleway.com/en/kubernetes-kapsule/) clusters
-- require pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
+- supports [kind](https://kind.sigs.k8s.io/) and [kapsule](https://www.scaleway.com/en/kubernetes-kapsule/) clusters
+- requires pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
 - only works with pods with a single container
 
 Between startup and `Ready` status, the pod benefits from a CPU boost (x10).
