@@ -4,8 +4,8 @@ Simple PoC to give pods a CPU boost during startup (before pod is `Ready`).
 
 :warning: **this is pre-alpha / work in progress, don't use in production** :warning:
 
-- only tested on a kind cluster with cgroup v2 + containerd
-- require pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
+- supports [kind](https://kind.sigs.k8s.io/) and [kapsule](https://www.scaleway.com/en/kubernetes-kapsule/) clusters
+- requires pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
 - only works with pods with a single container
 
 Between startup and `Ready` status, the pod benefits from a CPU boost (x10).
@@ -27,7 +27,7 @@ Use `ko`. Example on a `kind` cluster with cgroups v2 (default on latest operati
 
 ```sh
 KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
-    CGROUP_VERSION=v2 envsubst | \
+    CGROUP_VERSION=v2 K8S_DISTRIBUTION=kind envsubst | \
     kubectl apply -f -
 ```
 
@@ -50,7 +50,7 @@ Install `k8s-pod-cpu-booster` (change `CGROUP_VERSION` to `v1` if you're using c
 
 ```sh
 KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
-    CGROUP_VERSION=v2 envsubst | \
+    CGROUP_VERSION=v2 K8S_DISTRIBUTION=kind envsubst | \
     kubectl apply -f -
 ```
 
@@ -108,5 +108,4 @@ kind delete cluster
 
 ## TODO
 
-- support other things than containerd and cgroups v2
 - support pods with multiple containers
