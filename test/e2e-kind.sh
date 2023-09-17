@@ -23,6 +23,8 @@ python_no_boost_ready_time=$(kubectl get pods python-no-boost -o go-template='{{
 python_no_boost_seconds_to_be_ready=$(( $( date -d "$python_no_boost_ready_time" +%s ) - $( date -d "$python_no_boost_start_time" +%s ) ))
 echo "[INFO] python-no-boost pod took $python_no_boost_seconds_to_be_ready second(s) to be ready"
 
+exit_code=0
+
 # python-with-boost should start <ready_time_minimum_ratio> times quicker than python-no-boost
 ready_time_minimum_ratio=3
 
@@ -31,8 +33,7 @@ then
     echo -e "\033[0;32m[SUCCESS]\033[0m python-with-boost started more than $ready_time_minimum_ratio times quicker than python-no-boost"
 else
     echo -e "\033[0;31m[FAILURE]\033[0m python-with-boost should start more than $ready_time_minimum_ratio times quicker than python-no-boost"
-    kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
-    exit 1
+    exit_code=1
 fi
 
 # also check that cgroup cpu.max or cpu.cfs_quota_us file is back to the default limits
@@ -47,15 +48,13 @@ then
     if ! diff -b <(cat pod_cpu.cfs_quota_us) <(echo "5000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.cfs_quota_us has not been reset"
-        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
-        exit 1
+        exit_code=1
     fi
 
     if ! diff -b <(cat python_container_cpu.cfs_quota_us) <(echo "5000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.cfs_quota_us has not been reset"
-        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
-        exit 1
+        exit_code=1
     fi
 else # cgroup v2
     docker exec kind-worker cat /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-pod${python_with_boost_pod_uid}.slice/cpu.max > pod_cpu.max
@@ -64,18 +63,23 @@ else # cgroup v2
     if ! diff -b <(cat pod_cpu.max) <(echo "5000 100000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m pod cgroup cpu.max has not been reset"
-        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
-        exit 1
+        exit_code=1
     fi
 
     if ! diff -b <(cat python_container_cpu.max) <(echo "5000 100000")
     then
         echo -e "\033[0;31m[FAILURE]\033[0m python container cgroup cpu.max has not been reset"
-        kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
-        exit 1
+        exit_code=1
     fi
 fi
+
+echo "Pod-cpu-booster logs"
+echo "===================="
+kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+echo "===================="
 
 kubectl delete \
     -f ./test/e2e/python-no-boost.yaml \
     -f ./test/e2e/python-with-boost.yaml
+
+exit $exit_code
