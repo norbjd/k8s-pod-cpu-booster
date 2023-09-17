@@ -1,6 +1,7 @@
 package cgroupv1_containerd_kind
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -56,6 +57,10 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 	if err != nil {
+		fmt.Println(err)
+		fmt.Println(errors.Unwrap(err))
+		fmt.Println(errors.Unwrap(errors.Unwrap(err)))
+		fmt.Println(errors.Unwrap(errors.Unwrap(errors.Unwrap(err))))
 		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
 	}
 
