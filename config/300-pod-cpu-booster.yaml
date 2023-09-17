@@ -22,6 +22,8 @@ spec:
               fieldPath: spec.nodeName
         - name: CGROUP_VERSION
           value: "$CGROUP_VERSION"
+        - name: K8S_DISTRIBUTION
+          value: "$K8S_DISTRIBUTION"
         resources:
           limits:
             cpu: 100m
