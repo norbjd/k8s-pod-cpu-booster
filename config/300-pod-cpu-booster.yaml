@@ -20,6 +20,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: CGROUP_VERSION
+          value: "$CGROUP_VERSION"
         resources:
           limits:
             cpu: 100m

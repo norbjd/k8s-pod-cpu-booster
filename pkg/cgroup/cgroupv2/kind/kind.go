@@ -10,10 +10,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type Cgroupv2ContainerdKindHandler struct{}
+type Cgroupv2KindHandler struct{}
 
 // TODO: write only if file exists. Try to understand when the file is available
-func (m Cgroupv2ContainerdKindHandler) WriteCPUMax(podUID types.UID, containerID string, newCPUMax uint64) error {
+func (m Cgroupv2KindHandler) WriteCPUMax(podUID types.UID, containerID string, newCPUMax uint64) error {
 	podCgroupSliceDirectory := getPodCgroupSliceDirectory(podUID)
 	containerCgroupScopeDirectory := getContainerCgroupScopeDirectory(podCgroupSliceDirectory, containerID)
 

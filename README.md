@@ -23,10 +23,12 @@ The controller messes with cgroups file `cpu.max` to give that boost (or reset t
 
 ## Install
 
-Use `ko`. Example on a `kind` cluster:
+Use `ko`. Example on a `kind` cluster with cgroups v2 (default on latest operating systems):
 
 ```sh
-KO_DOCKER_REPO=kind.local ko apply -f config/
+KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
+    CGROUP_VERSION=v2 envsubst | \
+    kubectl apply -f -
 ```
 
 ## Test/Demo
@@ -44,10 +46,12 @@ docker pull python:3.11-alpine
 kind load docker-image python:3.11-alpine
 ```
 
-Install `k8s-pod-cpu-booster`:
+Install `k8s-pod-cpu-booster` (change `CGROUP_VERSION` to `v1` if you're using cgroups v1):
 
 ```sh
-KO_DOCKER_REPO=kind.local ko apply -f config/
+KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
+    CGROUP_VERSION=v2 envsubst | \
+    kubectl apply -f -
 ```
 
 Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the annotation `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
