@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -24,44 +25,36 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 	klog.Infof("will write %s to %s and %s", newCPUCfsQuotaUsFileContents, podCgroupCPUCfsQuotaUsFile, containerCgroupCPUCfsQuotaUsFile)
 
-	fi1, err := os.Stat(podCgroupCPUCfsQuotaUsFile)
+	podCgroupCurrentCPUCfsQuotaUs, err := os.ReadFile(podCgroupCPUCfsQuotaUsFile)
 	if err != nil {
-		return fmt.Errorf("cannot stat pod cgroup %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+		return fmt.Errorf("cannot read pod current cgroup cpu quota %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+	}
+	podCgroupCurrentCPUCfsQuotaUsValue, err := strconv.ParseInt(string(podCgroupCurrentCPUCfsQuotaUs), 10, 64)
+	if err != nil {
+		return fmt.Errorf("cannot convert pod current cgroup cpu quota value %s in %s: %w",
+			string(podCgroupCurrentCPUCfsQuotaUs), podCgroupCPUCfsQuotaUsFile, err)
 	}
 
-	fmt.Println(fi1)
-	fmt.Println(fi1.Mode().String())
+	if int64(newCPUMax) >= podCgroupCurrentCPUCfsQuotaUsValue {
+		err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+		if err != nil {
+			return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+		}
 
-	fi2, err := os.Stat(containerCgroupCPUCfsQuotaUsFile)
-	if err != nil {
-		return fmt.Errorf("cannot stat container cgroup %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
-	}
+		err = os.WriteFile(containerCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+		if err != nil {
+			return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
+		}
+	} else { // write first to container
+		err = os.WriteFile(containerCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+		if err != nil {
+			return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
+		}
 
-	fmt.Println(fi2)
-	fmt.Println(fi2.Mode().String())
-
-	contents1, err := os.ReadFile(podCgroupCPUCfsQuotaUsFile)
-	if err != nil {
-		return fmt.Errorf("cannot read pod cgroup %s: %w", podCgroupCPUCfsQuotaUsFile, err)
-	}
-
-	fmt.Println(string(contents1))
-
-	contents2, err := os.ReadFile(containerCgroupCPUCfsQuotaUsFile)
-	if err != nil {
-		return fmt.Errorf("cannot read container cgroup %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
-	}
-
-	fmt.Println(string(contents2))
-
-	err = os.WriteFile(containerCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
-	if err != nil {
-		return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
-	}
-
-	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
-	if err != nil {
-		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+		err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
+		if err != nil {
+			return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+		}
 	}
 
 	podCgroupCPUMaxFileContents, _ := os.ReadFile(podCgroupCPUCfsQuotaUsFile)

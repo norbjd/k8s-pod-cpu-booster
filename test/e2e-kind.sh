@@ -83,6 +83,4 @@ kubectl delete \
     -f ./test/e2e/python-no-boost.yaml \
     -f ./test/e2e/python-with-boost.yaml
 
-journalctl --no-pager
-
 exit $exit_code
