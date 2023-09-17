@@ -27,7 +27,7 @@ const (
 
 // Inspired by:
 // - https://www.cncf.io/blog/2019/10/15/extend-kubernetes-via-a-shared-informer/
-func Run(clientset *kubernetes.Clientset, cgroupHandler cgroup.CgroupHandler) {
+func Run(clientset *kubernetes.Clientset, cgroupHandler cgroup.Handler) {
 	factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithTweakListOptions(podCPUBoosterTweakFunc()))
 	informer := factory.Core().V1().Pods().Informer()
 
@@ -74,7 +74,7 @@ func getBoostMultiplierFromAnnotations(pod *corev1.Pod) uint64 {
 	return cpuBoostDefaultMultiplier
 }
 
-func onUpdate(cgroupHandler cgroup.CgroupHandler, oldObj interface{}, newObj interface{}) {
+func onUpdate(cgroupHandler cgroup.Handler, oldObj interface{}, newObj interface{}) {
 	oldPod := oldObj.(*corev1.Pod)
 	newPod := newObj.(*corev1.Pod)
 	klog.Infof(
@@ -150,12 +150,12 @@ func quantityToCPULimit(quantity *resource.Quantity) uint64 {
 	return uint64(quantity.AsApproximateFloat64() * 100_000.)
 }
 
-func boostCPU(cgroupHandler cgroup.CgroupHandler, podUID types.UID, containerID string, initialCPULimit *resource.Quantity, boostMultiplier uint64) error {
+func boostCPU(cgroupHandler cgroup.Handler, podUID types.UID, containerID string, initialCPULimit *resource.Quantity, boostMultiplier uint64) error {
 	klog.Infof("CPU limit: %d", quantityToCPULimit(initialCPULimit))
 	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * boostMultiplier
 	klog.Infof("New cgroup cpu limit to: %d", cgroupCPULimitAfterBoost)
 
-	err := cgroupHandler.WriteCPUMax(podUID, containerID, cgroupCPULimitAfterBoost)
+	err := cgroup.WriteCPULimit(cgroupHandler, podUID, containerID, cgroupCPULimitAfterBoost)
 	if err != nil {
 		return err
 	}
@@ -163,11 +163,11 @@ func boostCPU(cgroupHandler cgroup.CgroupHandler, podUID types.UID, containerID 
 	return nil
 }
 
-func resetCPUBoost(cgroupHandler cgroup.CgroupHandler, podUID types.UID, containerID string, initialCPULimit *resource.Quantity) error {
+func resetCPUBoost(cgroupHandler cgroup.Handler, podUID types.UID, containerID string, initialCPULimit *resource.Quantity) error {
 	cgroupCPULimitAfterReset := quantityToCPULimit(initialCPULimit)
 	klog.Infof("Reset cgroup cpu limit to: %d", cgroupCPULimitAfterReset)
 
-	err := cgroupHandler.WriteCPUMax(podUID, containerID, cgroupCPULimitAfterReset)
+	err := cgroup.WriteCPULimit(cgroupHandler, podUID, containerID, cgroupCPULimitAfterReset)
 	if err != nil {
 		return err
 	}
