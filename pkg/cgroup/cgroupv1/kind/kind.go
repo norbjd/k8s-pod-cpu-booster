@@ -24,19 +24,35 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 
 	klog.Infof("will write %s to %s and %s", newCPUCfsQuotaUsFileContents, podCgroupCPUCfsQuotaUsFile, containerCgroupCPUCfsQuotaUsFile)
 
-	fi, err := os.Stat(podCgroupCPUCfsQuotaUsFile)
+	fi1, err := os.Stat(podCgroupCPUCfsQuotaUsFile)
 	if err != nil {
 		return fmt.Errorf("cannot stat pod cgroup %s: %w", podCgroupCPUCfsQuotaUsFile, err)
 	}
 
-	fmt.Println(fi)
+	fmt.Println(fi1)
+	fmt.Println(fi1.Mode().String())
 
-	fi, err = os.Stat(containerCgroupCPUCfsQuotaUsFile)
+	fi2, err := os.Stat(containerCgroupCPUCfsQuotaUsFile)
 	if err != nil {
 		return fmt.Errorf("cannot stat container cgroup %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
 	}
 
-	fmt.Println(fi)
+	fmt.Println(fi2)
+	fmt.Println(fi2.Mode().String())
+
+	contents1, err := os.ReadFile(podCgroupCPUCfsQuotaUsFile)
+	if err != nil {
+		return fmt.Errorf("cannot read pod cgroup %s: %w", podCgroupCPUCfsQuotaUsFile, err)
+	}
+
+	fmt.Println(string(contents1))
+
+	contents2, err := os.ReadFile(containerCgroupCPUCfsQuotaUsFile)
+	if err != nil {
+		return fmt.Errorf("cannot read container cgroup %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
+	}
+
+	fmt.Println(string(contents2))
 
 	err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 	if err != nil {
