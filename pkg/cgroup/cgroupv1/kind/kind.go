@@ -29,10 +29,11 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 	if err != nil {
 		return fmt.Errorf("cannot read pod current cgroup cpu quota %s: %w", podCgroupCPUCfsQuotaUsFile, err)
 	}
-	podCgroupCurrentCPUCfsQuotaUsValue, err := strconv.ParseInt(string(podCgroupCurrentCPUCfsQuotaUs), 10, 64)
+	podCgroupCurrentCPUCfsQuotaUsValueString := strings.TrimSuffix(string(podCgroupCurrentCPUCfsQuotaUs), "\n")
+	podCgroupCurrentCPUCfsQuotaUsValue, err := strconv.ParseInt(podCgroupCurrentCPUCfsQuotaUsValueString, 10, 64)
 	if err != nil {
 		return fmt.Errorf("cannot convert pod current cgroup cpu quota value %s in %s: %w",
-			string(podCgroupCurrentCPUCfsQuotaUs), podCgroupCPUCfsQuotaUsFile, err)
+			podCgroupCurrentCPUCfsQuotaUsValueString, podCgroupCPUCfsQuotaUsFile, err)
 	}
 
 	if int64(newCPUMax) >= podCgroupCurrentCPUCfsQuotaUsValue {
