@@ -155,7 +155,7 @@ func boostCPU(cgroupHandler cgroup.Handler, podUID types.UID, containerID string
 	cgroupCPULimitAfterBoost := quantityToCPULimit(initialCPULimit) * boostMultiplier
 	klog.Infof("New cgroup cpu limit to: %d", cgroupCPULimitAfterBoost)
 
-	err := cgroup.WriteCPUMax(cgroupHandler, podUID, containerID, cgroupCPULimitAfterBoost)
+	err := cgroup.WriteCPULimit(cgroupHandler, podUID, containerID, cgroupCPULimitAfterBoost)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func resetCPUBoost(cgroupHandler cgroup.Handler, podUID types.UID, containerID s
 	cgroupCPULimitAfterReset := quantityToCPULimit(initialCPULimit)
 	klog.Infof("Reset cgroup cpu limit to: %d", cgroupCPULimitAfterReset)
 
-	err := cgroup.WriteCPUMax(cgroupHandler, podUID, containerID, cgroupCPULimitAfterReset)
+	err := cgroup.WriteCPULimit(cgroupHandler, podUID, containerID, cgroupCPULimitAfterReset)
 	if err != nil {
 		return err
 	}

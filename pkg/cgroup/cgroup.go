@@ -36,12 +36,12 @@ var (
 	errMismatchVersion = errors.New("cgroup version mismatch")
 )
 
-func WriteCPUMax(handler Handler, podUID types.UID, containerID string, newCPUMax uint64) error {
+func WriteCPULimit(handler Handler, podUID types.UID, containerID string, cpuLimit uint64) error {
 	switch handler.GetVersion() {
 	case v1:
-		return v1WriteCPUMax(handler, podUID, containerID, newCPUMax)
+		return v1WriteCPUCfsQuotaUs(handler, podUID, containerID, cpuLimit)
 	case v2:
-		return v2WriteCPUMax(handler, podUID, containerID, newCPUMax)
+		return v2WriteCPUMax(handler, podUID, containerID, cpuLimit)
 	default:
 		return errInvalidVersion
 	}

@@ -14,31 +14,31 @@ func v2WriteCPUMax(handler Handler, podUID types.UID, containerID string, newCPU
 		return fmt.Errorf("%w: handler must be %s, but got %s", errMismatchVersion, v2.String(), handler.GetVersion().String())
 	}
 
-	podCgroupSliceDirectory := handler.GetPodDirectory(podUID)
-	containerCgroupScopeDirectory := handler.GetContainerDirectory(podUID, containerID)
+	podDirectory := handler.GetPodDirectory(podUID)
+	containerDirectory := handler.GetContainerDirectory(podUID, containerID)
 
-	podCgroupCPUMaxFile := path.Join(podCgroupSliceDirectory, "cpu.max")
-	containerCgroupCPUMaxFile := path.Join(containerCgroupScopeDirectory, "cpu.max")
+	podCPUMaxFile := path.Join(podDirectory, "cpu.max")
+	containerCPUMaxFile := path.Join(containerDirectory, "cpu.max")
 
 	newCPUMaxFileContents := fmt.Sprintf("%d 100000", newCPUMax)
 
-	klog.Infof("will write %s to %s and %s", newCPUMaxFileContents, podCgroupCPUMaxFile, containerCgroupCPUMaxFile)
+	klog.Infof("will write %s to %s and %s", newCPUMaxFileContents, podCPUMaxFile, containerCPUMaxFile)
 
-	err := os.WriteFile(podCgroupCPUMaxFile, []byte(newCPUMaxFileContents), 0o644)
+	err := os.WriteFile(podCPUMaxFile, []byte(newCPUMaxFileContents), 0o644)
 	if err != nil {
-		return fmt.Errorf("cannot write to %s: %w", podCgroupCPUMaxFile, err)
+		return fmt.Errorf("cannot write to %s: %w", podCPUMaxFile, err)
 	}
 
-	err = os.WriteFile(containerCgroupCPUMaxFile, []byte(newCPUMaxFileContents), 0o644)
+	err = os.WriteFile(containerCPUMaxFile, []byte(newCPUMaxFileContents), 0o644)
 	if err != nil {
-		return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUMaxFile, err)
+		return fmt.Errorf("cannot write to %s: %w", containerCPUMaxFile, err)
 	}
 
-	podCgroupCPUMaxFileContents, _ := os.ReadFile(podCgroupCPUMaxFile)
-	klog.Infof("pod cpu.max: %s", string(podCgroupCPUMaxFileContents))
+	podCPUMaxFileContents, _ := os.ReadFile(podCPUMaxFile)
+	klog.Infof("pod cpu.max: %s", string(podCPUMaxFileContents))
 
-	containerCgroupCPUMaxFileContents, _ := os.ReadFile(containerCgroupCPUMaxFile)
-	klog.Infof("container cpu.max: %s", string(containerCgroupCPUMaxFileContents))
+	containerCPUMaxFileContents, _ := os.ReadFile(containerCPUMaxFile)
+	klog.Infof("container cpu.max: %s", string(containerCPUMaxFileContents))
 
 	return nil
 }
