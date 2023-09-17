@@ -36,7 +36,11 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 			podCgroupCurrentCPUCfsQuotaUsValueString, podCgroupCPUCfsQuotaUsFile, err)
 	}
 
+	// note: for cgroup v1, the order to update files is important
 	if int64(newCPUMax) >= podCgroupCurrentCPUCfsQuotaUsValue {
+		klog.Infof("new cpu value (%d) is greater or equal than existing one (%s), so will update the pod cgroup first (%s), and then the container cgroup (%s)",
+			newCPUMax, podCgroupCurrentCPUCfsQuotaUsValue, podCgroupCPUCfsQuotaUsFile, containerCgroupCPUCfsQuotaUsFile)
+
 		err = os.WriteFile(podCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 		if err != nil {
 			return fmt.Errorf("cannot write to %s: %w", podCgroupCPUCfsQuotaUsFile, err)
@@ -46,7 +50,10 @@ func (m Cgroupv1KindHandler) WriteCPUMax(podUID types.UID, containerID string, n
 		if err != nil {
 			return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
 		}
-	} else { // write first to container
+	} else {
+		klog.Infof("new cpu value (%d) is smaller than existing one (%s), so will update the container cgroup first (%s), and then the pod cgroup (%s)",
+			newCPUMax, podCgroupCurrentCPUCfsQuotaUsValue, containerCgroupCPUCfsQuotaUsFile, podCgroupCPUCfsQuotaUsFile)
+
 		err = os.WriteFile(containerCgroupCPUCfsQuotaUsFile, []byte(newCPUCfsQuotaUsFileContents), 0o644)
 		if err != nil {
 			return fmt.Errorf("cannot write to %s: %w", containerCgroupCPUCfsQuotaUsFile, err)
