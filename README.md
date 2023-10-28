@@ -23,12 +23,10 @@ The controller messes with cgroups file `cpu.max` to give that boost (or reset t
 
 ## Install
 
-Use `ko`. Example on a `kind` cluster with cgroups v2 (default on latest operating systems):
+Use `ko`. Example on a `kind` cluster:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
-    CGROUP_VERSION=v2 K8S_DISTRIBUTION=kind envsubst | \
-    kubectl apply -f -
+KO_DOCKER_REPO=kind.local ko apply -f config/
 ```
 
 ## Test/Demo
@@ -46,12 +44,10 @@ docker pull python:3.11-alpine
 kind load docker-image python:3.11-alpine
 ```
 
-Install `k8s-pod-cpu-booster` (change `CGROUP_VERSION` to `v1` if you're using cgroups v1):
+Install `k8s-pod-cpu-booster`:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko resolve -f config/ | \
-    CGROUP_VERSION=v2 K8S_DISTRIBUTION=kind envsubst | \
-    kubectl apply -f -
+KO_DOCKER_REPO=kind.local ko apply -f config/
 ```
 
 Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the annotation `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
@@ -90,11 +86,11 @@ done
 Example result:
 
 ```
-python-with-default-boost started at: 2023-09-03T15:55:45Z / ready at: 2023-09-03T15:55:46Z
-python-no-boost started at: 2023-09-03T15:55:44Z / ready at: 2023-09-03T15:55:58Z
+python-with-default-boost started at: 2023-10-28T14:00:46Z / ready at: 2023-10-28T14:00:49Z
+python-no-boost started at: 2023-10-28T14:00:46Z / ready at: 2023-10-28T14:01:04Z
 ```
 
-Here, the pod with the CPU boost (`python-with-default-boost`) took around 1 second to start, while the pod without CPU boost (`python-no-boost`) took around 14 seconds.
+Here, the pod with the CPU boost (`python-with-default-boost`) took around 3 seconds to start, while the pod without CPU boost (`python-no-boost`) took around 18 seconds.
 
 Cleanup:
 

@@ -20,10 +20,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        - name: CGROUP_VERSION
-          value: "$CGROUP_VERSION"
-        - name: K8S_DISTRIBUTION
-          value: "$K8S_DISTRIBUTION"
         resources:
           limits:
             cpu: 100m
@@ -31,14 +27,5 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
-        securityContext:
-          runAsUser: 0 # required otherwise we won't be able to edit files under /sys/fs/cgroup
-        volumeMounts:
-        - name: sysfscgroup
-          mountPath: /sys/fs/cgroup
       serviceAccountName: pod-cpu-booster
       terminationGracePeriodSeconds: 0 # TODO: change for production environments
-      volumes:
-      - name: sysfscgroup
-        hostPath:
-          path: /sys/fs/cgroup
