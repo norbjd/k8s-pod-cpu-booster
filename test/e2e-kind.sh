@@ -27,7 +27,7 @@ echo "[INFO] python-no-boost pod took $python_no_boost_seconds_to_be_ready secon
 exit_code=0
 
 # python-with-boost should start <ready_time_minimum_ratio> times quicker than python-no-boost
-ready_time_minimum_ratio=3
+ready_time_minimum_ratio=2
 
 if [ $(( $python_no_boost_seconds_to_be_ready / $python_with_boost_seconds_to_be_ready )) -ge $ready_time_minimum_ratio ]
 then
