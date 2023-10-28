@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-with-default-boost
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deployment-with-default-boost
+  template:
+    metadata:
+      annotations:
+        norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
+      labels:
+        app: deployment-with-default-boost
+    spec:
+      containers:
+      - image: python:3.11-alpine
+        name: python
+        command: ["python"]
+        args:
+        - -m
+        - http.server
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        resizePolicy:
+        - resourceName: cpu
+          restartPolicy: NotRequired
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100M
+          limits:
+            cpu: 50m
+            memory: 100M
+      terminationGracePeriodSeconds: 0

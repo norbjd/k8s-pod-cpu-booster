@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-no-boost
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deployment-no-boost
+  template:
+    metadata:
+      labels:
+        app: deployment-no-boost
+    spec:
+      containers:
+      - image: python:3.11-alpine
+        name: python
+        command: ["python"]
+        args:
+        - -m
+        - http.server
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100M
+          limits:
+            cpu: 50m
+            memory: 100M
+      terminationGracePeriodSeconds: 0
