@@ -19,6 +19,9 @@ spec:
       periodSeconds: 1
       successThreshold: 1
       timeoutSeconds: 1
+    resizePolicy:
+    - resourceName: cpu
+      restartPolicy: NotRequired # this is very important to be able to update the CPU resources in place (no need to restart the pod)
     resources:
       requests:
         cpu: 50m

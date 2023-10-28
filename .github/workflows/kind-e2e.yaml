@@ -40,23 +40,17 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup KinD
-      uses: chainguard-dev/actions/setup-kind@main
+      # TODO: this is a fork to be able to use feature gates
+      # TODO: change to the official chainguard-dev/actions/setup-kind@main when merged upstream
+      uses: norbjd/actions/setup-kind@add-feature-gates-to-setup-kind
       with:
         k8s-version: ${{ matrix.k8s-version }}
         kind-worker-count: 1
+        feature-gates: InPlacePodVerticalScaling
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        K8S_DISTRIBUTION="kind"
-        CGROUP_VERSION="v2"
-        if [ "${{ matrix.os }}" == "ubuntu-20.04" ]
-        then
-          CGROUP_VERSION="v1"
-        fi
-
-        ko resolve -f config/ | \
-          CGROUP_VERSION="$CGROUP_VERSION" K8S_DISTRIBUTION="$K8S_DISTRIBUTION" envsubst | \
-          kubectl apply -f -
+        ko apply -f config/
 
     - name: Wait for Ready
       run: |
