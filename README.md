@@ -4,7 +4,7 @@ Simple PoC to give pods a CPU boost during startup (before pod is `Ready`).
 
 :warning: **this is pre-alpha / work in progress, don't use in production** :warning:
 
-- supports [kind](https://kind.sigs.k8s.io/) and [kapsule](https://www.scaleway.com/en/kubernetes-kapsule/) clusters
+- supports Kubernetes clusters starting from version 1.27 only (for older versions, see [`v0.1.0`](https://github.com/norbjd/k8s-pod-cpu-booster/tree/v0.1.0))
 - requires pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
 - only works with pods with a single container
 
@@ -18,8 +18,6 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 
 - if specified, it will increase the CPU limit by `x`, where `x` is the value of the annotation (must be an unsigned integer)
 - if unspecified or invalid, it will increase the CPU limit by the default value (`10`)
-
-The controller messes with cgroups file `cpu.max` to give that boost (or reset the limit).
 
 ## Install
 
