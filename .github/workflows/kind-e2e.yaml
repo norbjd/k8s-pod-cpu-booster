@@ -20,6 +20,7 @@ jobs:
       matrix:
         k8s-version:
         - v1.27.x
+        - v1.28.x
         os:
         - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1
         - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
