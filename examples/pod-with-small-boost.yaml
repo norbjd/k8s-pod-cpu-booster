@@ -3,7 +3,8 @@ kind: Pod
 metadata:
   annotations:
     norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
-  name: python-with-boost
+    norbjd.github.io/k8s-pod-cpu-booster-multiplier: "3"
+  name: pod-with-small-boost
 spec:
   containers:
   - image: python:3.11-alpine
@@ -19,9 +20,6 @@ spec:
       periodSeconds: 1
       successThreshold: 1
       timeoutSeconds: 1
-    resizePolicy:
-    - resourceName: cpu
-      restartPolicy: NotRequired # this is very important to be able to update the CPU resources in place (no need to restart the pod)
     resources:
       requests:
         cpu: 50m

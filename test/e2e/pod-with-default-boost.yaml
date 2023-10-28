@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   annotations:
     norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
-  name: python-with-default-boost
+  name: pod-with-default-boost
 spec:
   containers:
   - image: python:3.11-alpine

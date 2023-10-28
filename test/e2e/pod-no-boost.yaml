@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: python-no-boost
+  name: pod-no-boost
 spec:
   containers:
   - image: python:3.11-alpine
