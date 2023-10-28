@@ -67,7 +67,7 @@ func podCPUBoosterTweakFunc() internalinterfaces.TweakListOptionsFunc {
 }
 
 func getBoostMultiplierFromAnnotations(pod *corev1.Pod) uint64 {
-	if boostMultiplierAnnotationValue, ok := pod.Annotations["cpuBoostMultiplierAnnotation"]; ok {
+	if boostMultiplierAnnotationValue, ok := pod.Annotations[cpuBoostMultiplierAnnotation]; ok {
 		boostMultiplierAnnotationValueInt, err := strconv.ParseUint(boostMultiplierAnnotationValue, 10, 64)
 		if err != nil {
 			klog.Errorf("boost multiplier is not a valid value, will take the default %d instead: %s",
