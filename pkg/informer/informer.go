@@ -26,6 +26,8 @@ const (
 	cpuBoostMultiplierAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-multiplier"
 	cpuBoostDefaultMultiplier    = uint64(10)
 
+	cpuBoostContainerNameAnnotation = "norbjd.github.io/k8s-pod-cpu-booster-container"
+
 	cpuBoostProgressLabelName    = "norbjd.github.io/k8s-pod-cpu-booster-progress"
 	cpuBoostInProgressLabelValue = "boosting"
 	cpuBoostDoneLabelValue       = "has-been-boosted"
@@ -93,23 +95,44 @@ func onUpdate(clientset *kubernetes.Clientset, oldObj interface{}, newObj interf
 			return
 		}
 
-		if len(newPod.Spec.Containers) != 1 {
-			klog.Infof("pod %s/%s contains %d containers, skipping...", newPod.Namespace, newPod.Name, len(newPod.Spec.Containers))
-			return
+		containerNameToBoost := newPod.Annotations[cpuBoostContainerNameAnnotation]
+
+		containerIndex := -1
+
+		if containerNameToBoost == "" {
+			if len(newPod.Spec.Containers) > 1 {
+				klog.Warningf("pod %s/%s contains %d containers but annotation %s is unset, skipping...",
+					newPod.Namespace, newPod.Name, len(newPod.Spec.Containers), cpuBoostContainerNameAnnotation)
+				return
+			} else {
+				containerIndex = 0
+			}
+		} else {
+			for i, container := range newPod.Spec.Containers {
+				if container.Name == containerNameToBoost {
+					containerIndex = i
+					break
+				}
+			}
+
+			if containerIndex == -1 {
+				klog.Warningf("pod %s/%s contains no containers named %s (found in annotation %s), skipping...",
+					newPod.Namespace, newPod.Name, containerNameToBoost, cpuBoostContainerNameAnnotation)
+				return
+			}
 		}
 
-		currentCPULimit := newPod.Spec.Containers[0].Resources.Limits.Cpu()
 		boostMultiplier := getBoostMultiplierFromAnnotations(newPod)
 
 		if podJustStartedAndNotReadyYet(newPod) {
-			klog.Infof("will boost %s/%s CPU limit (currently: %s)", newPod.Namespace, newPod.Name, currentCPULimit)
-			err := boostCPU(clientset, newPod, currentCPULimit, boostMultiplier)
+			klog.Infof("will boost %s/%s (container %s) CPU limit", newPod.Namespace, newPod.Name, containerNameToBoost)
+			err := boostCPU(clientset, newPod, containerIndex, boostMultiplier)
 			if err != nil {
 				klog.Errorf("error while boosting CPU: %s", err.Error())
 			}
 		} else if podIsNowReadyAfterBoosting(newPod) {
-			klog.Infof("will reset %s/%s CPU limit to default (currently: %s)", newPod.Namespace, newPod.Name, currentCPULimit)
-			err := resetCPUBoost(clientset, newPod, currentCPULimit, boostMultiplier)
+			klog.Infof("will reset %s/%s (container %s) CPU limit to default", newPod.Namespace, newPod.Name, containerNameToBoost)
+			err := resetCPUBoost(clientset, newPod, containerIndex, boostMultiplier)
 			if err != nil {
 				klog.Errorf("error while resetting CPU boost: %s", err.Error())
 			}
@@ -143,11 +166,15 @@ func podJustStartedAndNotReadyYet(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodRunning && pod.Labels[cpuBoostProgressLabelName] == ""
 }
 
-func boostCPU(clientset *kubernetes.Clientset, pod *corev1.Pod, currentCPULimit *resource.Quantity, boostMultiplier uint64) error {
+func boostCPU(clientset *kubernetes.Clientset, pod *corev1.Pod, containerIndex int, boostMultiplier uint64) error {
+	container := pod.Spec.Containers[containerIndex]
+	currentCPULimit := container.Resources.Limits.Cpu()
 	cpuLimitAfterBoost := resource.NewScaledQuantity(currentCPULimit.ScaledValue(resource.Nano)*int64(boostMultiplier), resource.Nano)
-	klog.Infof("Will set new CPU limit to: %s", cpuLimitAfterBoost)
 
-	err := writeCPULimit(clientset, pod, cpuLimitAfterBoost, boost)
+	klog.Infof("Current CPU limit for %s/%s (container %s) is %s, will set new CPU limit to %s",
+		pod.Namespace, pod.Name, container.Name, currentCPULimit, cpuLimitAfterBoost)
+
+	err := writeCPULimit(clientset, pod, containerIndex, cpuLimitAfterBoost, boost)
 	if err != nil {
 		return err
 	}
@@ -155,11 +182,15 @@ func boostCPU(clientset *kubernetes.Clientset, pod *corev1.Pod, currentCPULimit 
 	return nil
 }
 
-func resetCPUBoost(clientset *kubernetes.Clientset, pod *corev1.Pod, currentCPULimit *resource.Quantity, boostMultiplier uint64) error {
+func resetCPUBoost(clientset *kubernetes.Clientset, pod *corev1.Pod, containerIndex int, boostMultiplier uint64) error {
+	container := pod.Spec.Containers[containerIndex]
+	currentCPULimit := container.Resources.Limits.Cpu()
 	cpuLimitAfterReset := resource.NewScaledQuantity(currentCPULimit.ScaledValue(resource.Nano)/int64(boostMultiplier), resource.Nano)
-	klog.Infof("Will reset CPU limit to: %s", cpuLimitAfterReset)
 
-	err := writeCPULimit(clientset, pod, cpuLimitAfterReset, reset)
+	klog.Infof("Current CPU limit for %s/%s (container %s) is %s, will reset CPU limit to %s",
+		pod.Namespace, pod.Name, container.Name, currentCPULimit, cpuLimitAfterReset)
+
+	err := writeCPULimit(clientset, pod, containerIndex, cpuLimitAfterReset, reset)
 	if err != nil {
 		return err
 	}
@@ -174,7 +205,7 @@ const (
 	reset
 )
 
-func writeCPULimit(clientset *kubernetes.Clientset, pod *corev1.Pod, cpuLimit *resource.Quantity, action action) error {
+func writeCPULimit(clientset *kubernetes.Clientset, pod *corev1.Pod, containerIndex int, cpuLimit *resource.Quantity, action action) error {
 	ctx := context.Background()
 	podsClient := clientset.CoreV1().Pods(pod.Namespace)
 
@@ -204,33 +235,40 @@ func writeCPULimit(clientset *kubernetes.Clientset, pod *corev1.Pod, cpuLimit *r
 			return fmt.Errorf("unknown action: %d (expected %d or %d)", action, boost, reset)
 		}
 
+		container := result.Spec.Containers[containerIndex]
+
 		newResources := corev1.ResourceRequirements{
 			Requests: make(corev1.ResourceList),
 			Limits:   make(corev1.ResourceList),
-			Claims:   result.Spec.Containers[0].Resources.Claims,
+			Claims:   container.Resources.Claims,
 		}
 
-		for resourceName, resourceQuantity := range result.Spec.Containers[0].Resources.Requests {
+		for resourceName, resourceQuantity := range container.Resources.Requests {
 			newResources.Requests[resourceName] = resourceQuantity
 		}
 
-		for resourceName, resourceQuantity := range result.Spec.Containers[0].Resources.Limits {
+		for resourceName, resourceQuantity := range container.Resources.Limits {
 			newResources.Limits[resourceName] = resourceQuantity
 		}
 
 		newResources.Requests[corev1.ResourceCPU] = *cpuLimit
 		newResources.Limits[corev1.ResourceCPU] = *cpuLimit
 
-		result.Spec.Containers[0].Resources = newResources
+		container.Resources = newResources
+
+		result.Spec.Containers[containerIndex] = container
 
 		updatedPod, updateErr := podsClient.Update(ctx, result, metav1.UpdateOptions{})
 		if updateErr != nil {
 			return updateErr
 		}
 
-		klog.Infof("CPU request/limit successfully updated to %s/%s",
-			updatedPod.Spec.Containers[0].Resources.Requests.Cpu(),
-			updatedPod.Spec.Containers[0].Resources.Limits.Cpu(),
+		klog.Infof("CPU request/limit for %s/%s (container %s) successfully updated to %s/%s",
+			updatedPod.Namespace,
+			updatedPod.Name,
+			container.Name,
+			updatedPod.Spec.Containers[containerIndex].Resources.Requests.Cpu(),
+			updatedPod.Spec.Containers[containerIndex].Resources.Limits.Cpu(),
 		)
 		return nil
 	})

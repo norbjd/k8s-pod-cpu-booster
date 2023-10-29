@@ -4,11 +4,14 @@ Simple PoC to give pods a CPU boost during startup (before pod is `Ready`).
 
 :warning: **this is pre-alpha / work in progress, don't use in production** :warning:
 
-- supports Kubernetes clusters starting from version 1.27 only (for older versions, see [`v0.1.0`](https://github.com/norbjd/k8s-pod-cpu-booster/tree/v0.1.0))
-- requires pods to have a `readinessProbe` configured, and a value for `resources.limits.cpu`
-- only works with pods with a single container
+- supports Kubernetes clusters starting from version 1.27 only with `InPlacePodVerticalScaling` feature gate enabled (for older versions, see [`v0.1.0`](https://github.com/norbjd/k8s-pod-cpu-booster/tree/v0.1.0))
+- requires container to boost to have:
+  - a `readinessProbe` configured
+  - a value for `resources.limits.cpu`
+  - a `resizePolicy` with `resourceName: cpu` and `restartPolicy: NotRequire`
+- works with pods with multiple containers, but can **only** boost a **single** container inside the pod
 
-Between startup and `Ready` status, the pod benefits from a CPU boost (x10).
+Between startup and `Ready` status, the container benefits from a CPU boost (x10).
 
 ## How does it work?
 
