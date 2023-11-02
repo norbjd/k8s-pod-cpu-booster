@@ -1,0 +1,39 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: example
+spec:
+  template:
+    metadata:
+      annotations:
+        queue.sidecar.serving.knative.dev/cpu-resource-request: "300m" # otherwise it takes a while to be ready
+        queue.sidecar.serving.knative.dev/cpu-resource-limit: "300m"
+        queue.sidecar.serving.knative.dev/memory-resource-request: "10M"
+        queue.sidecar.serving.knative.dev/memory-resource-limit: "10M"
+        norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
+        norbjd.github.io/k8s-pod-cpu-booster-container: "user-container"
+    spec:
+      containers:
+        - image: python:3.11-alpine
+          command: ["python"]
+          args:
+          - -m
+          - http.server
+          ports:
+            - containerPort: 8000
+          # readinessProbe is not necessary because it's already configured by Knative with the queue-proxy.
+          # At startup, it agressively polls the user-container. But, if needed, we can configure it though
+          readinessProbe:
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          # resizePolicy is not required here, because by default it it set to update the resources without restarting the pod!
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100M
+            limits:
+              cpu: 50m
+              memory: 100M
+      timeoutSeconds: 1 # also used to terminate the pod quickly when terminating

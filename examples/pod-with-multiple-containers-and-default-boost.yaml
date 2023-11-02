@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
+    norbjd.github.io/k8s-pod-cpu-booster-container: "python"
+  name: pod-with-multiple-containers-and-default-boost
+spec:
+  containers:
+  - image: python:3.11-alpine
+    name: python
+    command: ["python"]
+    args:
+    - -m
+    - http.server
+    readinessProbe:
+      tcpSocket:
+        port: 8000
+      initialDelaySeconds: 0
+      periodSeconds: 1
+      successThreshold: 1
+      timeoutSeconds: 1
+    resizePolicy:
+    - resourceName: cpu
+      restartPolicy: NotRequired # this is very important to be able to update the CPU resources in place (no need to restart the pod)
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100M
+      limits:
+        cpu: 50m
+        memory: 100M
+  - image: alpine:3.18 # a dummy container just sleeping
+    name: sleep
+    command: ["sleep", "infinity"]
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50M
+      limits:
+        cpu: 50m
+        memory: 50M
+  terminationGracePeriodSeconds: 0
