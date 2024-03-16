@@ -27,7 +27,7 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 Use `ko`. Example on a `kind` cluster:
 
 ```sh
-make --directory config/ --silent --no-print-directory mutating-webhook-certs # generates self-signed certificates for the webhook
+make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
 kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
@@ -49,7 +49,7 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-make --directory config/ --silent --no-print-directory mutating-webhook-certs # generates self-signed certificates for the webhook
+make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
 kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
@@ -104,7 +104,7 @@ Cleanup:
 kubectl delete -f examples/pod-no-boost.yaml -f examples/pod-with-default-boost.yaml
 
 kustomize build config/ | KO_DOCKER_REPO=kind.local ko delete -f -
-make --directory config/ --silent --no-print-directory remove-certs
+make --directory config/ remove-certs
 
 kind delete cluster
 ```
