@@ -12,7 +12,6 @@ import (
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/klog/v2"
@@ -54,20 +53,8 @@ func mutatePod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Do server-side validation that we are only dealing with a pod resource. This
-	// should also be part of the MutatingWebhookConfiguration in the cluster, but
-	// we should verify here before continuing.
-	// TODO: also check the label enabling boosting is set
-	podResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
-	if admissionReviewRequest.Request.Resource != podResource {
-		errNotAPod := fmt.Errorf("did not receive pod, got %s", admissionReviewRequest.Request.Resource.Resource)
-		klog.ErrorS(errNotAPod, "")
-		w.WriteHeader(400)
-		w.Write([]byte(errNotAPod.Error()))
-		return
-	}
-
-	// Decode the pod from the AdmissionReview.
+	// decode the pod from the AdmissionReview
+	// here, we are **sure** the object is a pod, because this is configured in the MutatingWebhookConfiguration's rules
 	rawRequest := admissionReviewRequest.Request.Object.Raw
 	pod := corev1.Pod{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &pod); err != nil {
