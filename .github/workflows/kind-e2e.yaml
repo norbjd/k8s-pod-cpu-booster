@@ -51,7 +51,8 @@ jobs:
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        ko apply -f config/
+        make --directory config/ --silent --no-print-directory mutating-webhook-certs
+        kustomize build config/ | ko apply -f -
 
     - name: Wait for Ready
       run: |

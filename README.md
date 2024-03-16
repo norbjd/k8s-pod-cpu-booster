@@ -27,7 +27,8 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 Use `ko`. Example on a `kind` cluster:
 
 ```sh
-make --directory config/ --silent --no-print-directory build | KO_DOCKER_REPO=kind.local ko apply -f -
+make --directory config/ --silent --no-print-directory mutating-webhook-certs # generates self-signed certificates for the webhook
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
 ## Test/Demo
@@ -48,7 +49,8 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-make --directory config/ --silent --no-print-directory build | KO_DOCKER_REPO=kind.local ko apply -f -
+make --directory config/ --silent --no-print-directory mutating-webhook-certs # generates self-signed certificates for the webhook
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
 Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the label `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
@@ -101,7 +103,8 @@ Cleanup:
 ```sh
 kubectl delete -f examples/pod-no-boost.yaml -f examples/pod-with-default-boost.yaml
 
-make --directory config/ --silent --no-print-directory build | KO_DOCKER_REPO=kind.local ko delete -f -
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko delete -f -
+make --directory config/ --silent --no-print-directory remove-certs
 
 kind delete cluster
 ```
