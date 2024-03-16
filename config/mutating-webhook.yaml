@@ -48,7 +48,7 @@ spec:
         - name: mutating-webhook
           image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd/webhook
           args:
-            - -v=9 # TODO: remove
+            - -v=9
             - -port=8443
             - -cert=/etc/certs/tls.crt
             - -key=/etc/certs/tls.key

@@ -101,9 +101,13 @@ func mutatePod(w http.ResponseWriter, r *http.Request) {
 		]
 	`, boostInfo.ContainerIndex, newCPURequest.String(), boostInfo.ContainerIndex, newCPULimit.String())
 
-	// TODO: in case of a pod from a Deployment or a knative Service, pod.Name is empty, why?
+	podName := pod.Name
+	if podName == "" {
+		podName = pod.GenerateName + "<generated>"
+	}
+
 	klog.Infof("Current CPU request/limit for %s/%s (container 0) is %s/%s, will set new CPU limit to %s/%s (boost by %d)",
-		pod.Namespace, pod.Name, currentCPURequest, currentCPULimit, newCPURequest, newCPULimit, boostInfo.Multiplier)
+		pod.Namespace, podName, currentCPURequest, currentCPULimit, newCPURequest, newCPULimit, boostInfo.Multiplier)
 
 	admissionResponse.Allowed = true
 	admissionResponse.PatchType = &patchType
@@ -141,7 +145,7 @@ func Run(port uint, certFile, keyFile string) error {
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		},
-		ErrorLog: klog.NewStandardLogger("INFO"), // TODO?
+		ErrorLog: klog.NewStandardLogger("INFO"),
 	}
 
 	if err := server.ListenAndServeTLS("", ""); err != nil {

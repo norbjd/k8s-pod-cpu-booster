@@ -20,8 +20,6 @@ func main() {
 
 	flag.Parse()
 
-	// TODO: check pathToCertFile and pathToKeyFile are existing files
-
 	err := webhook.Run(port, pathToCertFile, pathToKeyFile)
 	if err != nil {
 		klog.Fatal(err)
