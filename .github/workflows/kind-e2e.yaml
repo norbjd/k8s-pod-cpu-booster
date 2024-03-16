@@ -55,8 +55,9 @@ jobs:
 
     - name: Wait for Ready
       run: |
-        echo "Waiting for Pods to become ready"
-        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l name=pod-cpu-booster
+        echo "Waiting for k8s-pod-cpu-booster items to become ready"
+        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=pod-cpu-booster
+        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=mutating-webhook
         sleep 5 # because readiness probe is not accurate (Ready != informer is started), but sleeping is enough for now
 
     - name: Run e2e Tests
