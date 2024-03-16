@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  annotations:
+  labels:
     norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
   name: pod-with-default-boost
 spec:
