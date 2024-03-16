@@ -1,11 +1,13 @@
 ---
+namespace: pod-cpu-booster
 resources:
   - mutating-webhook.yaml
   - namespace.yaml
   - pod-cpu-boost-reset.yaml
 secretGenerator:
-  - namespace: pod-cpu-booster
-    name: mutating-webhook-certs
+  - name: mutating-webhook-certs
+    options:
+      disableNameSuffixHash: true
     type: kubernetes.io/tls
     files:
       - ca.crt
@@ -14,7 +16,6 @@ secretGenerator:
 replacements:
   - source:
       kind: Secret
-      namespace: pod-cpu-booster
       name: mutating-webhook-certs
       fieldPath: "data.[ca.crt]"
     targets:
