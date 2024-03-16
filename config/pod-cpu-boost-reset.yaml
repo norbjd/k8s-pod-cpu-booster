@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pod-cpu-boost-reset
+  namespace: pod-cpu-booster
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pod-cpu-boost-reset
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - watch
+      - get
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pod-cpu-boost-reset
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pod-cpu-boost-reset
+subjects:
+  - kind: ServiceAccount
+    name: pod-cpu-boost-reset
+    namespace: pod-cpu-booster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-cpu-boost-reset
+  namespace: pod-cpu-booster
+spec:
+  replicas: 1 # for now, we don't support multiple replicas
+  selector:
+    matchLabels:
+      app: pod-cpu-boost-reset
+  template:
+    metadata:
+      labels:
+        app: pod-cpu-boost-reset
+    spec:
+      containers:
+      - name: pod-cpu-boost-reset
+        image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd/informer
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      serviceAccountName: pod-cpu-boost-reset
+      terminationGracePeriodSeconds: 0 # TODO: change for production environments

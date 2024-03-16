@@ -1,0 +1,78 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: k8s-pod-cpu-booster
+webhooks:
+  - name: k8s-pod-cpu-booster.norbjd.github.io
+    clientConfig:
+      caBundle: "" # will be overriden by kustomization replacement
+      service:
+        namespace: pod-cpu-booster
+        name: mutating-webhook
+        path: /mutate
+    objectSelector:
+      matchExpressions:
+        # we don't want that creation of mutating-webhook pods triggers the webhook (otherwise pods won't start)
+        - key: app
+          operator: NotIn
+          values:
+            - mutating-webhook
+        - key: norbjd.github.io/k8s-pod-cpu-booster-enabled
+          operator: In
+          values:
+            - "true"
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+        operations: ["CREATE"]
+        scope: Namespaced
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mutating-webhook
+  namespace: pod-cpu-booster
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mutating-webhook
+  template:
+    metadata:
+      labels:
+        app: mutating-webhook
+    spec:
+      containers:
+        - name: mutating-webhook
+          image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd/webhook
+          args:
+            - -v=9 # TODO: remove
+            - -port=8443
+            - -cert=/etc/certs/tls.crt
+            - -key=/etc/certs/tls.key
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/certs
+              readOnly: true
+      volumes:
+        - name: certs
+          secret:
+            secretName: mutating-webhook-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mutating-webhook
+  namespace: pod-cpu-booster
+spec:
+  selector:
+    app: mutating-webhook
+  ports:
+    - port: 443
+      targetPort: 8443

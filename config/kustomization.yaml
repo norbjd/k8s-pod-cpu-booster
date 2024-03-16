@@ -1,0 +1,25 @@
+---
+resources:
+  - mutating-webhook.yaml
+  - namespace.yaml
+  - pod-cpu-boost-reset.yaml
+secretGenerator:
+  - namespace: pod-cpu-booster
+    name: mutating-webhook-certs
+    type: kubernetes.io/tls
+    files:
+      - ca.crt
+      - tls.crt
+      - tls.key
+replacements:
+  - source:
+      kind: Secret
+      namespace: pod-cpu-booster
+      name: mutating-webhook-certs
+      fieldPath: "data.[ca.crt]"
+    targets:
+      - select:
+          kind: MutatingWebhookConfiguration
+          name: k8s-pod-cpu-booster
+        fieldPaths:
+          - webhooks.[name=k8s-pod-cpu-booster.norbjd.github.io].clientConfig.caBundle
