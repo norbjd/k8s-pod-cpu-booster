@@ -9,9 +9,8 @@ spec:
       app: deployment-with-default-boost
   template:
     metadata:
-      annotations:
-        norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
       labels:
+        norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
         app: deployment-with-default-boost
     spec:
       containers:

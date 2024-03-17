@@ -128,9 +128,14 @@ else # cgroup v2
     fi
 fi
 
-echo "Pod-cpu-booster logs"
+echo "mutating-webhook logs"
 echo "===================="
-kubectl logs --tail=-1 -n pod-cpu-booster -l name=pod-cpu-booster
+kubectl logs --tail=-1 -n pod-cpu-booster -l app=mutating-webhook --prefix
+echo "===================="
+
+echo "pod-cpu-boost-reset logs"
+echo "===================="
+kubectl logs --tail=-1 -n pod-cpu-booster -l app=pod-cpu-boost-reset --prefix
 echo "===================="
 
 kubectl delete \

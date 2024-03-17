@@ -15,11 +15,14 @@ Between startup and `Ready` status, the container benefits from a CPU boost (x10
 
 ## How does it work?
 
-It is deployed as a controller on every node (with a `DaemonSet`). It listens for every pod update; if a pod has `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label: it boosts the CPU at pod startup, and reset the CPU limit when the pod is ready.
+It is deployed in two parts:
 
-The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation:
+- a mutating webhook boosting the CPU of pods with `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label, before they are submitted to k8s API
+- a controller listening for every update of pods with `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label; when a pod is ready, it will reset its CPU limit
 
-- if specified, it will increase the CPU limit by `x`, where `x` is the value of the annotation (must be an unsigned integer)
+The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multiplier` label:
+
+- if specified, it will increase the CPU limit by `x`, where `x` is the value of the label (must be an unsigned integer)
 - if unspecified or invalid, it will increase the CPU limit by the default value (`10`)
 
 ## Install
@@ -27,7 +30,8 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 Use `ko`. Example on a `kind` cluster:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko apply -f config/
+make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
 ## Test/Demo
@@ -48,25 +52,26 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko apply -f config/
+make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
 ```
 
-Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the annotation `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
+Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the label `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
 
 ```diff
 --- examples/pod-no-boost.yaml
 +++ examples/pod-with-default-boost.yaml
 @@ -4 +4,3 @@
 -  name: pod-no-boost
-+  annotations:
++  labels:
 +    norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
 +  name: pod-with-default-boost
 ```
 
 > [!NOTE]
-> The CPU boost multiplier can also be configured (see [`pod-with-small-boost.yaml`](https://github.com/norbjd/k8s-pod-cpu-booster/blob/main/examples/pod-with-small-boost.yaml)) by using the `norbjd.github.io/k8s-pod-cpu-booster-multiplier` annotation.
+> The CPU boost multiplier can also be configured (see [`pod-with-small-boost.yaml`](https://github.com/norbjd/k8s-pod-cpu-booster/blob/main/examples/pod-with-small-boost.yaml)) by using the `norbjd.github.io/k8s-pod-cpu-booster-multiplier` label.
 
-As a result, the pod `pod-with-default-boost` (with the annotation) will benefit from a CPU boost, but `pod-no-boost` won't:
+As a result, the pod `pod-with-default-boost` (with the label) will benefit from a CPU boost, but `pod-no-boost` won't:
 
 ```sh
 kubectl apply -f examples/pod-no-boost.yaml -f examples/pod-with-default-boost.yaml
@@ -101,7 +106,8 @@ Cleanup:
 ```sh
 kubectl delete -f examples/pod-no-boost.yaml -f examples/pod-with-default-boost.yaml
 
-KO_DOCKER_REPO=kind.local ko delete -f config/
+kustomize build config/ | KO_DOCKER_REPO=kind.local ko delete -f -
+make --directory config/ remove-certs
 
 kind delete cluster
 ```

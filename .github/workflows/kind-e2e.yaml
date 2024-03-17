@@ -22,7 +22,7 @@ jobs:
         - v1.27.x
         - v1.28.x
         os:
-        - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1
+        # - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1 # TODO: temporarily disabled because of openssl commands incompatibility (1.1.1 version vs 3.x)
         - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
     runs-on: ${{ matrix.os }}
 
@@ -51,12 +51,14 @@ jobs:
 
     - name: Install k8s-pod-cpu-booster
       run: |
-        ko apply -f config/
+        make --directory config/ mutating-webhook-certs
+        kustomize build config/ | ko apply -f -
 
     - name: Wait for Ready
       run: |
-        echo "Waiting for Pods to become ready"
-        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l name=pod-cpu-booster
+        echo "Waiting for k8s-pod-cpu-booster items to become ready"
+        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=pod-cpu-boost-reset
+        kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=mutating-webhook
         sleep 5 # because readiness probe is not accurate (Ready != informer is started), but sleeping is enough for now
 
     - name: Run e2e Tests

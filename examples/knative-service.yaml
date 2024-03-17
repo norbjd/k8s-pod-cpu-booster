@@ -10,6 +10,7 @@ spec:
         queue.sidecar.serving.knative.dev/cpu-resource-limit: "300m"
         queue.sidecar.serving.knative.dev/memory-resource-request: "10M"
         queue.sidecar.serving.knative.dev/memory-resource-limit: "10M"
+      labels:
         norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"
         norbjd.github.io/k8s-pod-cpu-booster-container: "user-container"
     spec:
