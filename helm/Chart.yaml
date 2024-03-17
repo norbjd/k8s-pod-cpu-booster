@@ -1,0 +1,7 @@
+apiVersion: v2
+name: k8s-pod-cpu-booster
+description: Simple PoC to give pods a CPU boost during startup
+
+type: application
+
+version: 0.1.0

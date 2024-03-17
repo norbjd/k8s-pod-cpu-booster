@@ -1,0 +1,14 @@
+# Default values for k8s-pod-cpu-booster.
+nameOverride: ""
+fullnameOverride: ""
+
+informer:
+  image: kind.local/github.com/norbjd/k8s-pod-cpu-booster/cmd/informer:latest
+  imagePullPolicy: Never
+  resources: {}
+
+webhook:
+  image: kind.local/github.com/norbjd/k8s-pod-cpu-booster/cmd/webhook:latest
+  imagePullPolicy: Never
+  replicaCount: 3
+  resources: {}

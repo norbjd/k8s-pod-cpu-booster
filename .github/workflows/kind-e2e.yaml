@@ -23,7 +23,7 @@ jobs:
         - v1.28.x
         - v1.29.x
         os:
-        # - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1 # TODO: temporarily disabled because of openssl commands incompatibility (1.1.1 version vs 3.x)
+        - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1
         - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
     runs-on: ${{ matrix.os }}
 
@@ -50,10 +50,14 @@ jobs:
         kind-worker-count: 1
         feature-gates: InPlacePodVerticalScaling
 
+    - name: Install helm
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
     - name: Install k8s-pod-cpu-booster
       run: |
-        make --directory config/ mutating-webhook-certs
-        kustomize build config/ | ko apply -f -
+        KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
+        helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
 
     - name: Wait for Ready
       run: |
