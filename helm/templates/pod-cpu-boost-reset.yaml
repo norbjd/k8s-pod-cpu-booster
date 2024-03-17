@@ -30,6 +30,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: pod-cpu-boost-reset
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -47,13 +48,9 @@ spec:
     spec:
       containers:
       - name: pod-cpu-boost-reset
-        image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd/informer
+        image: {{ .Values.informer.image }}
+        imagePullPolicy: {{ .Values.informer.imagePullPolicy }}
         resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
+          {{ toYaml .Values.resources }}
       serviceAccountName: pod-cpu-boost-reset
       terminationGracePeriodSeconds: 0 # TODO: change for production environments

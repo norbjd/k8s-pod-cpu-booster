@@ -1,3 +1,7 @@
+{{- $ca := genCA "svc-cat-ca" 3650 }}
+{{- $cn := "mutating-webhook" -}}
+{{- $altName := printf "%s.%s.svc" $cn .Release.Namespace }}
+{{- $cert := genSignedCert $cn nil (list $altName) 3650 $ca }}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -6,8 +10,9 @@ metadata:
 webhooks:
   - name: k8s-pod-cpu-booster.norbjd.github.io
     clientConfig:
-      caBundle: "" # will be overridden by kustomization replacement
-      service: # namespace field is overridden by the namespace defined in kustomization.yaml
+      caBundle: {{ b64enc $ca.Cert }}
+      service:
+        namespace: {{ .Release.Namespace }}
         name: mutating-webhook
         path: /mutate
     objectSelector:
@@ -30,12 +35,21 @@ webhooks:
     sideEffects: None
     admissionReviewVersions: ["v1"]
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mutating-webhook-certs
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ b64enc $cert.Cert }}
+  tls.key: {{ b64enc $cert.Key }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mutating-webhook
 spec:
-  replicas: 3
+  replicas: {{ .Values.webhook.replicaCount }}
   selector:
     matchLabels:
       app: mutating-webhook
@@ -46,7 +60,8 @@ spec:
     spec:
       containers:
         - name: mutating-webhook
-          image: ko://github.com/norbjd/k8s-pod-cpu-booster/cmd/webhook
+          image: {{ .Values.webhook.image }}
+          imagePullPolicy: {{ .Values.webhook.imagePullPolicy }}
           args:
             - -v=9
             - -port=8443
@@ -58,6 +73,8 @@ spec:
             - name: certs
               mountPath: /etc/certs
               readOnly: true
+          resources:
+            {{ toYaml .Values.resources }}
       volumes:
         - name: certs
           secret:

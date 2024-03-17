@@ -27,11 +27,11 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 
 ## Install
 
-Use `ko`. Example on a `kind` cluster:
+Use `ko` and `helm`. Example on a `kind` cluster:
 
 ```sh
-make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
-kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
+KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
+helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
 ```
 
 ## Test/Demo
@@ -52,8 +52,8 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-make --directory config/ mutating-webhook-certs # generates self-signed certificates for the webhook
-kustomize build config/ | KO_DOCKER_REPO=kind.local ko apply -f -
+KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
+helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
 ```
 
 Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the label `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
@@ -106,8 +106,7 @@ Cleanup:
 ```sh
 kubectl delete -f examples/pod-no-boost.yaml -f examples/pod-with-default-boost.yaml
 
-kustomize build config/ | KO_DOCKER_REPO=kind.local ko delete -f -
-make --directory config/ remove-certs
+helm uninstall -n pod-cpu-booster k8s-pod-cpu-booster
 
 kind delete cluster
 ```
