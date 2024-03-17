@@ -43,6 +43,10 @@ exit_code=0
 # pods with default boosts should start <ready_time_minimum_ratio> times quicker than pods with no boost
 ready_time_minimum_ratio=2
 
+# avoid divisions by zero by adding 1 second, shouldn't affect the result
+pod_with_boost_seconds_to_be_ready=$(($pod_with_boost_seconds_to_be_ready + 1))
+deployment_with_boost_pod_seconds_to_be_ready=$(($deployment_with_boost_pod_seconds_to_be_ready + 1))
+
 if [ $(( $pod_no_boost_seconds_to_be_ready / $pod_with_boost_seconds_to_be_ready )) -ge $ready_time_minimum_ratio ]
 then
     echo -e "\033[0;32m[SUCCESS]\033[0m pod-with-default-boost started more than $ready_time_minimum_ratio times quicker than pod-no-boost"
