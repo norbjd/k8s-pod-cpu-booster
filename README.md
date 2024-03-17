@@ -15,7 +15,10 @@ Between startup and `Ready` status, the container benefits from a CPU boost (x10
 
 ## How does it work?
 
-It is deployed as a controller on every node (with a `DaemonSet`). It listens for every pod update; if a pod has `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label: it boosts the CPU at pod startup, and reset the CPU limit when the pod is ready.
+It is deployed in two parts:
+
+- a mutating webhook boosting the CPU of pods with `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label, before they are submitted to k8s API
+- a controller listening for every update of pods with `norbjd.github.io/k8s-pod-cpu-booster-enabled: "true"` label; when a pod is ready, it will reset its CPU limit
 
 The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multiplier` label:
 
