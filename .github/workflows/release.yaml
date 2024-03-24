@@ -28,11 +28,12 @@ jobs:
     - name: Build and push
       env:
         KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
+        COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       run: |
         ko build ./cmd/informer ./cmd/webhook \
           --base-import-paths \
           --sbom=none \
-          --tags=${{ github.sha }},$IMAGE_TAG
+          --tags=$COMMIT_SHA,$IMAGE_TAG
 
   e2e-tests:
     name: e2e tests
