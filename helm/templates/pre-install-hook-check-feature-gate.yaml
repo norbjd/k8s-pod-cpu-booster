@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: check-in-place-pod-vertical-scaling-enabled
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: get-kubernetes-metrics
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - nonResourceURLs:
+    - "/metrics"
+    verbs:
+    - "get"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: check-in-place-pod-vertical-scaling-enabled
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: get-kubernetes-metrics
+subjects:
+  - kind: ServiceAccount
+    name: check-in-place-pod-vertical-scaling-enabled
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: check-in-place-pod-vertical-scaling-enabled
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  serviceAccountName: check-in-place-pod-vertical-scaling-enabled
+  restartPolicy: Never
+  containers:
+    - name: check-in-place-pod-vertical-scaling-enabled
+      image: "bitnami/kubectl"
+      command:
+        - sh
+        - -c
+        - |
+          if ! kubectl get --raw /metrics | grep -q -E '^kubernetes_feature_enabled.*name="InPlacePodVerticalScaling".*1$'
+          then
+            printf "InPlacePodVerticalScaling feature gate is required to install this chart, see README." | tee /dev/termination-log
+            exit 1
+          fi
+
+          printf "InPlacePodVerticalScaling feature gate is enabled; will continue!" | tee /dev/termination-log
+      terminationMessagePath: /dev/termination-log
