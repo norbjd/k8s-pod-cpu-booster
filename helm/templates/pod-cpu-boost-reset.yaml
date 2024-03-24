@@ -1,4 +1,9 @@
 ---
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: pod-cpu-boost-reset
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -32,12 +37,40 @@ subjects:
     name: pod-cpu-boost-reset
     namespace: {{ .Release.Namespace }}
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: acquire-lease
+rules:
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    resourceNames:
+      - pod-cpu-boost-reset
+    verbs:
+      - get
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-cpu-boost-reset
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acquire-lease
+subjects:
+  - kind: ServiceAccount
+    name: pod-cpu-boost-reset
+    namespace: {{ .Release.Namespace }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pod-cpu-boost-reset
 spec:
-  replicas: 1 # for now, we don't support multiple replicas
+  replicas: 3
   selector:
     matchLabels:
       app: pod-cpu-boost-reset
@@ -49,6 +82,15 @@ spec:
       containers:
       - name: pod-cpu-boost-reset
         image: {{ .Values.informer.image }}
+        args:
+        - --id=$(POD_NAME)
+        - --lease-lock-namespace={{ .Release.Namespace }}
+        - --lease-lock-name=pod-cpu-boost-reset
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         imagePullPolicy: {{ .Values.informer.imagePullPolicy }}
         resources:
           {{ toYaml .Values.resources }}
