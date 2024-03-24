@@ -70,7 +70,7 @@ kind: Deployment
 metadata:
   name: pod-cpu-boost-reset
 spec:
-  replicas: 3
+  replicas: {{ .Values.informer.replicaCount }}
   selector:
     matchLabels:
       app: pod-cpu-boost-reset
