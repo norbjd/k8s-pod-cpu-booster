@@ -27,10 +27,9 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 
 ## Install
 
-Use `ko` and `helm`. Example on a `kind` cluster:
+Use `helm`:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
 helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
 ```
 
@@ -52,7 +51,6 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
 helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
 ```
 
@@ -110,7 +108,3 @@ helm uninstall -n pod-cpu-booster k8s-pod-cpu-booster
 
 kind delete cluster
 ```
-
-## TODO
-
-- support pods with multiple containers
