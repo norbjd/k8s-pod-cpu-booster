@@ -26,7 +26,7 @@ jobs:
 
     - name: Build and push
       env:
-        KO_DOCKER_REPO: $DOCKER_REGISTRY
+        KO_DOCKER_REPO: ${{ vars.DOCKER_REGISTRY }}
       run: |
         ko build ./cmd/informer ./cmd/webhook \
           --base-import-paths \
