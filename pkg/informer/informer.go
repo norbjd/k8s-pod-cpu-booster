@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/norbjd/k8s-pod-cpu-booster/pkg/shared"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 )
@@ -26,9 +29,43 @@ const (
 	cpuBoostDoneLabelValue       = "has-been-boosted"
 )
 
+func Run(ctx context.Context, clientset *kubernetes.Clientset, leaseHolderIdentity, leaseLockNamespace, leaseLockName string) {
+	lock := &resourcelock.LeaseLock{
+		LeaseMeta: metav1.ObjectMeta{
+			Name:      leaseLockName,
+			Namespace: leaseLockNamespace,
+		},
+		Client: clientset.CoordinationV1(),
+		LockConfig: resourcelock.ResourceLockConfig{
+			Identity: leaseHolderIdentity,
+		},
+	}
+
+	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+		Lock:            lock,
+		ReleaseOnCancel: true,
+		LeaseDuration:   3 * time.Second,
+		RenewDeadline:   2 * time.Second,
+		RetryPeriod:     1 * time.Second,
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: func(ctx context.Context) {
+				run(clientset)
+			},
+			OnStoppedLeading: func() {
+				klog.Infof("stop leading: %s", leaseHolderIdentity)
+			},
+			OnNewLeader: func(identity string) {
+				if identity != leaseHolderIdentity {
+					klog.Infof("new leader elected: %s", identity)
+				}
+			},
+		},
+	})
+}
+
 // Inspired by:
 // - https://www.cncf.io/blog/2019/10/15/extend-kubernetes-via-a-shared-informer/
-func Run(clientset *kubernetes.Clientset) {
+func run(clientset *kubernetes.Clientset) {
 	factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithTweakListOptions(podCPUBoosterTweakFunc()))
 	informer := factory.Core().V1().Pods().Informer()
 
