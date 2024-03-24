@@ -3,12 +3,12 @@ nameOverride: ""
 fullnameOverride: ""
 
 informer:
-  image: kind.local/github.com/norbjd/k8s-pod-cpu-booster/cmd/informer:latest
-  imagePullPolicy: Never
+  image: ghcr.io/norbjd/k8s-pod-cpu-booster/informer:main
+  imagePullPolicy: Always
   resources: {}
 
 webhook:
-  image: kind.local/github.com/norbjd/k8s-pod-cpu-booster/cmd/webhook:latest
-  imagePullPolicy: Never
+  image: ghcr.io/norbjd/k8s-pod-cpu-booster/webhook:main
+  imagePullPolicy: Always
   replicaCount: 3
   resources: {}
