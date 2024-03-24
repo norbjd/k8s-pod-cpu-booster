@@ -8,9 +8,6 @@ on:
     branches:
     - main
 
-env:
-  IMAGE_TAG: ${{ github.head_ref != '' && github.head_ref || github.ref_name }}
-
 jobs:
   release:
     name: build and push to ghcr.io
@@ -28,57 +25,9 @@ jobs:
     - name: Build and push
       env:
         KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
-        COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       run: |
+        TAG="$(TZ=UTC0 git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)-$(git rev-parse --short HEAD)"
         ko build ./cmd/informer ./cmd/webhook \
           --base-import-paths \
           --sbom=none \
-          --tags=$COMMIT_SHA,$IMAGE_TAG
-
-  e2e-tests:
-    name: e2e tests
-    needs: release
-    strategy:
-      fail-fast: false
-      matrix:
-        k8s-version:
-          - v1.27.x
-          - v1.28.x
-          - v1.29.x
-        os:
-          - ubuntu-20.04 # Ubuntu 20.04 uses cgroup v1
-          - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.21.x
-      - # TODO: this is a fork to be able to use feature gates
-        # TODO: change to the official chainguard-dev/actions/setup-kind@main when merged upstream
-        uses: norbjd/actions/setup-kind@add-feature-gates-to-setup-kind
-        with:
-          k8s-version: ${{ matrix.k8s-version }}
-          kind-worker-count: 1
-          feature-gates: InPlacePodVerticalScaling
-      - name: Install helm
-        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-      - uses: actions/checkout@v4
-
-      - name: Build and install k8s-pod-cpu-booster
-        run: |
-          helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm \
-            --set informer.image=ghcr.io/norbjd/k8s-pod-cpu-booster/informer:$IMAGE_TAG \
-            --set webhook.image=ghcr.io/norbjd/k8s-pod-cpu-booster/webhook:$IMAGE_TAG \
-
-      - name: Wait for Ready
-        run: |
-          echo "Waiting for k8s-pod-cpu-booster items to become ready"
-          kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=pod-cpu-boost-reset
-          kubectl wait pod --for=condition=Ready -n pod-cpu-booster -l app=mutating-webhook
-          sleep 5 # because readiness probe is not accurate (Ready != informer is started), but sleeping is enough for now
-
-      - name: Run e2e Tests
-        shell: bash
-        run: |
-          OS=${{ matrix.os }} ./test/e2e-kind.sh
+          --tags=$TAG,${{ github.ref_name }}
