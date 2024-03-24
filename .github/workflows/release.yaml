@@ -26,7 +26,8 @@ jobs:
 
     - name: Build and push
       env:
-        KO_DOCKER_REPO: ${{ vars.DOCKER_REGISTRY }}
+        # TODO: use DOCKER_REGISTRY
+        KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
       run: |
         ko build ./cmd/informer ./cmd/webhook \
           --base-import-paths \
