@@ -16,6 +16,8 @@ jobs:
   release:
     name: build and push to ghcr.io
     runs-on: ubuntu-22.04
+    permissions:
+      packages: write
 
     steps:
     - uses: actions/setup-go@v4
