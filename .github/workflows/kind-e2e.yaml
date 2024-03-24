@@ -27,9 +27,6 @@ jobs:
         - ubuntu-22.04 # Ubuntu 22.04 uses cgroup v2
     runs-on: ${{ matrix.os }}
 
-    env:
-      KO_DOCKER_REPO: kind.local
-
     steps:
     - name: Set up Go 1.21.x
       uses: actions/setup-go@v4
@@ -55,9 +52,17 @@ jobs:
         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
     - name: Install k8s-pod-cpu-booster
+      env:
+        KO_DOCKER_REPO: kind.local
       run: |
-        KO_DOCKER_REPO=kind.local ko build -P ./cmd/informer ./cmd/webhook
-        helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm
+        INFORMER_IMAGE=$(ko build ./cmd/informer)
+        WEBHOOK_IMAGE=$(ko build ./cmd/webhook)
+
+        helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm \
+          --set informer.image=$INFORMER_IMAGE \
+          --set informer.imagePullPolicy=Never \
+          --set webhook.image=$WEBHOOK_IMAGE \
+          --set webhook.imagePullPolicy=Never
 
     - name: Wait for Ready
       run: |
