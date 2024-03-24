@@ -9,7 +9,6 @@ on:
     - main
 
 env:
-  GO_VERSION: 1.21
   DOCKER_REGISTRY: ghcr.io/norbjd/k8s-pod-cpu-booster
   IMAGE_TAG: ${{ github.head_ref != '' && github.head_ref || github.ref_name }}
 
@@ -21,7 +20,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v4
       with:
-        go-version: ${vars.GO_VERSION}.x
+        go-version: 1.21.x
     - uses: ko-build/setup-ko@v0.6
     - uses: actions/checkout@v4
 
@@ -51,7 +50,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: ${vars.GO_VERSION}.x
+          go-version: 1.21.x
       - # TODO: this is a fork to be able to use feature gates
         # TODO: change to the official chainguard-dev/actions/setup-kind@main when merged upstream
         uses: norbjd/actions/setup-kind@add-feature-gates-to-setup-kind
