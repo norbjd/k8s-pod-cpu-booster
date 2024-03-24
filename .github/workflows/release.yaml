@@ -9,7 +9,6 @@ on:
     - main
 
 env:
-  DOCKER_REGISTRY: ghcr.io/norbjd/k8s-pod-cpu-booster
   IMAGE_TAG: ${{ github.head_ref != '' && github.head_ref || github.ref_name }}
 
 jobs:
@@ -28,7 +27,6 @@ jobs:
 
     - name: Build and push
       env:
-        # TODO: use DOCKER_REGISTRY
         KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
       run: |
         ko build ./cmd/informer ./cmd/webhook \
@@ -68,8 +66,8 @@ jobs:
       - name: Build and install k8s-pod-cpu-booster
         run: |
           helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm \
-            --set informer.image=$DOCKER_REGISTRY/informer:$IMAGE_TAG \
-            --set webhook.image=$DOCKER_REGISTRY/webhook:$IMAGE_TAG \
+            --set informer.image=ghcr.io/norbjd/k8s-pod-cpu-booster/informer:$IMAGE_TAG \
+            --set webhook.image=ghcr.io/norbjd/k8s-pod-cpu-booster/webhook:$IMAGE_TAG \
 
       - name: Wait for Ready
         run: |
