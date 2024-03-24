@@ -23,8 +23,10 @@ jobs:
       env:
         KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
       run: |
-        TAG="$(TZ=UTC0 git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)-$(git rev-parse --short HEAD)"
+        # something like 202403241909-abcdef01 if we want to use a specific version
+        UNIQUE_TAG="$(TZ=UTC0 git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)-$(git rev-parse --short HEAD)"
+
         ko build ./cmd/informer ./cmd/webhook \
           --base-import-paths \
           --sbom=none \
-          --tags=$TAG,${{ github.ref_name }}
+          --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
