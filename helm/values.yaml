@@ -5,10 +5,11 @@ fullnameOverride: ""
 informer:
   image: ghcr.io/norbjd/k8s-pod-cpu-booster/informer:main
   imagePullPolicy: Always
+  replicaCount: 1
   resources: {}
 
 webhook:
   image: ghcr.io/norbjd/k8s-pod-cpu-booster/webhook:main
   imagePullPolicy: Always
-  replicaCount: 3
+  replicaCount: 1
   resources: {}
