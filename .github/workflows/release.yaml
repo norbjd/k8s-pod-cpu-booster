@@ -11,7 +11,7 @@ on:
 env:
   GO_VERSION: 1.21
   DOCKER_REGISTRY: ghcr.io/norbjd/k8s-pod-cpu-booster
-  IMAGE_TAG: ${{ github.head_ref != "" && github.head_ref || github.ref_name }}
+  IMAGE_TAG: ${{ github.head_ref != '' && github.head_ref || github.ref_name }}
 
 jobs:
   release:
