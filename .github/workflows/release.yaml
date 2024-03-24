@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v4
       with:
-        go-version: ${GO_VERSION}.x
+        go-version: ${env.GO_VERSION}.x
     - uses: ko-build/setup-ko@v0.6
     - uses: actions/checkout@v4
 
@@ -51,7 +51,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: ${GO_VERSION}.x
+          go-version: ${env.GO_VERSION}.x
       - # TODO: this is a fork to be able to use feature gates
         # TODO: change to the official chainguard-dev/actions/setup-kind@main when merged upstream
         uses: norbjd/actions/setup-kind@add-feature-gates-to-setup-kind
