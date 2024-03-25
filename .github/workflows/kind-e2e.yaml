@@ -58,7 +58,7 @@ jobs:
         INFORMER_IMAGE=$(ko build ./cmd/informer)
         WEBHOOK_IMAGE=$(ko build ./cmd/webhook)
 
-        helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./helm \
+        helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./charts \
           --set informer.image=$INFORMER_IMAGE \
           --set informer.imagePullPolicy=Never \
           --set webhook.image=$WEBHOOK_IMAGE \
