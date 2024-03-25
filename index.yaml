@@ -1,0 +1,13 @@
+apiVersion: v1
+entries:
+  k8s-pod-cpu-booster:
+  - apiVersion: v2
+    created: "2024-03-25T16:10:07.952474269Z"
+    description: Simple PoC to give pods a CPU boost during startup
+    digest: 5bea81f84e7f35afbdf4301e469c6398a0a3a59d20fee425b3e3f1d42f485f1c
+    name: k8s-pod-cpu-booster
+    type: application
+    urls:
+    - https://github.com/norbjd/k8s-pod-cpu-booster/releases/download/k8s-pod-cpu-booster-0.0.0-alpha.1/k8s-pod-cpu-booster-0.0.0-alpha.1.tgz
+    version: 0.0.0-alpha.1
+generated: "2024-03-25T16:10:07.952487674Z"
