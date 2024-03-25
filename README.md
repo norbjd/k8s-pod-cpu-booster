@@ -30,7 +30,11 @@ The CPU boost can be configured with `norbjd.github.io/k8s-pod-cpu-booster-multi
 Use `helm`:
 
 ```sh
-helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./charts/k8s-pod-cpu-booster
+helm repo add k8s-pod-cpu-booster https://norbjd.github.io/k8s-pod-cpu-booster
+helm repo update
+
+helm install k8s-pod-cpu-booster k8s-pod-cpu-booster/k8s-pod-cpu-booster --devel \
+  --namespace pod-cpu-booster --create-namespace
 ```
 
 ## Test/Demo
@@ -51,7 +55,11 @@ kind load docker-image python:3.11-alpine
 Install `k8s-pod-cpu-booster`:
 
 ```sh
-helm install k8s-pod-cpu-booster --namespace pod-cpu-booster --create-namespace ./charts/k8s-pod-cpu-booster
+helm repo add k8s-pod-cpu-booster https://norbjd.github.io/k8s-pod-cpu-booster
+helm repo update
+
+helm install k8s-pod-cpu-booster k8s-pod-cpu-booster/k8s-pod-cpu-booster --devel \
+  --namespace pod-cpu-booster --create-namespace
 ```
 
 Start two similar pods with low CPU limits and running `python -m http.server`, with a readiness probe configured to check when the http server is started. The only differences are the name (obviously), and the label `norbjd.github.io/k8s-pod-cpu-booster-enabled`:
