@@ -6,7 +6,7 @@ on:
     - main
 
 jobs:
-  release:
+  release-container-images:
     name: build and push to ghcr.io
     runs-on: ubuntu-22.04
     permissions:
@@ -30,3 +30,26 @@ jobs:
           --base-import-paths \
           --sbom=none \
           --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
+
+  release-helm-chart:
+    name: release helm chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
