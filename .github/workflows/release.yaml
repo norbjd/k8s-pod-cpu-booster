@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  pull_request:
-    branches:
-    - main
   push:
     branches:
     - main
@@ -51,7 +48,7 @@ jobs:
         ko build ./cmd/${{ matrix.component }} \
           --base-import-paths \
           --image-refs=.digest \
-          --tags=$UNIQUE_TAG # --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
+          --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
 
         image=$(cat .digest | cut -d'@' -f1 | cut -d':' -f1)
         digest=$(cat .digest| cut -d'@' -f2)
@@ -60,7 +57,7 @@ jobs:
 
         # this is probably not the best way to sign the SBOM:
         # - requires crane to get the SBOM image pushed above
-        # - is vulnerable to TOCTOU attacks if someone updates the sbom between "ko build" and now
+        # - is vulnerable to TOCTOU attacks if someone updates the sbom between "ko build" and "crane digest"
         # but, it's good enough for now, until I have a better solution
         sbom_digest=$(crane digest $image:sha256-$(echo $digest | cut -d':' -f2).sbom)
         echo "${{ matrix.component }}_sbom_image=$image" >> "$GITHUB_OUTPUT"
