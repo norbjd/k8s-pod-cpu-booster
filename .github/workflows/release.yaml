@@ -51,7 +51,7 @@ jobs:
         ko build ./cmd/${{ matrix.component }} \
           --base-import-paths \
           --image-refs=.digest \
-          --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
+          --tags=$UNIQUE_TAG # --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
 
         image=$(cat .digest | cut -d'@' -f1 | cut -d':' -f1)
         digest=$(cat .digest| cut -d'@' -f2)
