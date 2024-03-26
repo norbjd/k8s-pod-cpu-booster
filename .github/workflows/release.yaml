@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  pull_request:
-    branches:
-    - main
   push:
     branches:
     - main
@@ -44,7 +41,7 @@ jobs:
         ko build ./cmd/${{ matrix.component }} \
           --base-import-paths \
           --image-refs=.digest \
-          --tags=$UNIQUE_TAG # --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
+          --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
 
         image=$(cat .digest | cut -d'@' -f1 | cut -d':' -f1)
         digest=$(cat .digest| cut -d'@' -f2)
@@ -73,27 +70,27 @@ jobs:
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
-  #release-helm-chart:
-  #  name: release helm chart
-  #  runs-on: ubuntu-latest
-  #  permissions:
-  #    contents: write
-  #  
-  #  steps:
-  #    - uses: actions/checkout@v4
-  #      with:
-  #        fetch-depth: 0
-  #
-  #    - name: Configure Git
-  #      run: |
-  #        git config user.name "$GITHUB_ACTOR"
-  #        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-  #
-  #    - name: Install helm
-  #      run: |
-  #        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-  #
-  #    - name: Run chart-releaser
-  #      uses: helm/chart-releaser-action@v1.6.0
-  #      env:
-  #        CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  release-helm-chart:
+    name: release helm chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+  
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+  
+      - name: Install helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
