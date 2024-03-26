@@ -20,14 +20,21 @@ jobs:
     outputs:
       informer_image: ${{ steps.release.outputs.informer_image }}
       informer_digest: ${{ steps.release.outputs.informer_digest }}
+      informer_sbom_image: ${{ steps.release.outputs.informer_sbom_image }}
+      informer_sbom_digest: ${{ steps.release.outputs.informer_sbom_digest }}
+
       webhook_image: ${{ steps.release.outputs.webhook_image }}
       webhook_digest: ${{ steps.release.outputs.webhook_digest }}
+      webhook_sbom_image: ${{ steps.release.outputs.webhook_sbom_image }}
+      webhook_sbom_digest: ${{ steps.release.outputs.webhook_sbom_digest }}
 
     steps:
     - uses: actions/setup-go@v4
       with:
         go-version: 1.21.x
     - uses: ko-build/setup-ko@v0.6
+    - name: Install crane
+      run: go install github.com/google/go-containerregistry/cmd/crane@v0.19.1
     - uses: actions/checkout@v4
 
     - id: release
@@ -47,6 +54,14 @@ jobs:
         digest=$(cat .digest| cut -d'@' -f2)
         echo "${{ matrix.component }}_image=$image" >> "$GITHUB_OUTPUT"
         echo "${{ matrix.component }}_digest=$digest" >> "$GITHUB_OUTPUT"
+
+        # this is probably not the best way to sign the SBOM:
+        # - requires crane to get the SBOM image pushed above
+        # - is vulnerable to TOCTOU attacks if someone updates the sbom between "ko build" and "crane digest"
+        # but, it's good enough for now, until I have a better solution
+        sbom_digest=$(crane digest $image:sha256-$(echo $digest | cut -d':' -f2).sbom)
+        echo "${{ matrix.component }}_sbom_image=$image" >> "$GITHUB_OUTPUT"
+        echo "${{ matrix.component }}_sbom_digest=$sbom_digest" >> "$GITHUB_OUTPUT"
   
   # see https://github.com/slsa-framework/slsa-github-generator/blob/v1.10.0/internal/builders/container/README.md#ko
   provenance:
@@ -56,7 +71,9 @@ jobs:
       matrix:
         component:
         - informer
+        - informer_sbom
         - webhook
+        - webhook_sbom
     permissions:
       actions: read
       id-token: write
