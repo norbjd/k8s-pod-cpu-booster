@@ -1,16 +1,31 @@
 name: Release
 
 on:
+  pull_request:
+    branches:
+    - main
   push:
     branches:
     - main
 
 jobs:
   release-container-images:
+    id: release-container-images
     name: build and push to ghcr.io
+    strategy:
+      matrix:
+        component:
+        - informer
+        - webhook
     runs-on: ubuntu-22.04
     permissions:
       packages: write
+
+    outputs:
+      informer_image: ${{ steps.release.outputs.informer_image }}
+      informer_digest: ${{ steps.release.outputs.informer_digest }}
+      webhook_image: ${{ steps.release.outputs.webhook_image }}
+      webhook_digest: ${{ steps.release.outputs.webhook_digest }}
 
     steps:
     - uses: actions/setup-go@v4
@@ -19,39 +34,67 @@ jobs:
     - uses: ko-build/setup-ko@v0.6
     - uses: actions/checkout@v4
 
-    - name: Build and push
+    - id: release
+      name: Build and push
       env:
         KO_DOCKER_REPO: ghcr.io/norbjd/k8s-pod-cpu-booster
       run: |
         # something like 202403241909-abcdef01 if we want to use a specific version
         UNIQUE_TAG="$(TZ=UTC0 git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)-$(git rev-parse --short HEAD)"
 
-        ko build ./cmd/informer ./cmd/webhook \
+        ko build ./cmd/{{ matrix.component }} \
           --base-import-paths \
-          --sbom=none \
+          --image-refs=.digest \
           --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
 
-  release-helm-chart:
-    name: release helm chart
-    runs-on: ubuntu-latest
+        image=$(cat .digest | cut -d'@' -f1 | cut -d':' -f1)
+        digest=$(cat .digest| cut -d'@' -f2)
+        echo "{{ matrix.component }}_image=$image" >> "$GITHUB_OUTPUT"
+        echo "{{ matrix.component }}_digest=$digest" >> "$GITHUB_OUTPUT"
+  
+  # see https://github.com/slsa-framework/slsa-github-generator/blob/v1.10.0/internal/builders/container/README.md#ko
+  provenance:
+    needs:
+      - release-container-images
+    strategy:
+      matrix:
+        component:
+        - informer
+        - webhook
     permissions:
-      contents: write
-    
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
+    with:
+      image: "${{ needs.release-container-images.outputs[format('{0}_image', matrix.component)] }}"
+      digest: "${{ needs.release-container-images.outputs[format('{0}_digest', matrix.component)] }}"
+      registry-username: ${{ github.actor }}
+      compile-generator: true
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Install helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  #release-helm-chart:
+  #  name: release helm chart
+  #  runs-on: ubuntu-latest
+  #  permissions:
+  #    contents: write
+  #  
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #      with:
+  #        fetch-depth: 0
+  #
+  #    - name: Configure Git
+  #      run: |
+  #        git config user.name "$GITHUB_ACTOR"
+  #        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+  #
+  #    - name: Install helm
+  #      run: |
+  #        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  #
+  #    - name: Run chart-releaser
+  #      uses: helm/chart-releaser-action@v1.6.0
+  #      env:
+  #        CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
