@@ -40,7 +40,6 @@ jobs:
 
         ko build ./cmd/${{ matrix.component }} \
           --base-import-paths \
-          --sbom=none \
           --image-refs=.digest \
           --tags=$GITHUB_REF_NAME,$UNIQUE_TAG
 
