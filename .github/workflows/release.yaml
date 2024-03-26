@@ -10,7 +10,6 @@ on:
 
 jobs:
   release-container-images:
-    id: release-container-images
     name: build and push to ghcr.io
     strategy:
       matrix:
