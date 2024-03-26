@@ -62,7 +62,7 @@ jobs:
         # - requires crane to get the SBOM image pushed above
         # - is vulnerable to TOCTOU attacks if someone updates the sbom between "ko build" and now
         # but, it's good enough for now, until I have a better solution
-        sbom_digest=$(crane digest $image:sha256-$digest.sbom)
+        sbom_digest=$(crane digest $image:sha256-$(echo $digest | cut -d':' -f2).sbom)
         echo "${{ matrix.component }}_sbom_image=$image" >> "$GITHUB_OUTPUT"
         echo "${{ matrix.component }}_sbom_digest=$sbom_digest" >> "$GITHUB_OUTPUT"
   
