@@ -39,9 +39,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup KinD
-      # TODO: this is a fork to be able to use feature gates
-      # TODO: change to the official chainguard-dev/actions/setup-kind@main when merged upstream
-      uses: norbjd/actions/setup-kind@add-feature-gates-to-setup-kind
+      uses: chainguard-dev/actions/setup-kind@acaa0304efab07960b18bcf59117c1560d8cee10
       with:
         k8s-version: ${{ matrix.k8s-version }}
         kind-worker-count: 1
